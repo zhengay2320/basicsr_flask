@@ -533,3 +533,76 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
         showMessage(e.message);
     }
 })();
+
+const taskCreateForm = document.getElementById("taskCreateForm");
+const taskCreateMessage = document.getElementById("taskCreateMessage");
+const taskResetBtn = document.getElementById("taskResetBtn");
+
+function clearTaskErrors() {
+  const ids = [
+    "taskNameError",
+    "taskTypeError",
+    "datasetError",
+    "modelNameError",
+    "configContentError"
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = "";
+  });
+  if (taskCreateMessage) taskCreateMessage.innerText = "";
+}
+
+function showTaskMessage(text, ok = false) {
+  if (!taskCreateMessage) return;
+  taskCreateMessage.style.color = ok ? "var(--success)" : "var(--danger)";
+  taskCreateMessage.innerText = text;
+}
+
+taskCreateForm.addEventListener("submit", async function (e) {
+  e.preventDefault();
+  clearTaskErrors();
+
+  const payload = {
+    task_name: document.getElementById("taskName").value.trim(),
+    task_type: document.getElementById("taskType").value,
+    dataset: document.getElementById("dataset").value.trim(),
+    model_name: document.getElementById("modelName").value.trim(),
+    config_content: document.getElementById("configContent").value.trim(),
+    remark: document.getElementById("remark").value.trim()
+  };
+
+  let valid = true;
+
+  if (!payload.task_name) {
+    document.getElementById("taskNameError").innerText = "请输入任务名称";
+    valid = false;
+  }
+  if (!payload.task_type) {
+    document.getElementById("taskTypeError").innerText = "请选择任务类型";
+    valid = false;
+  }
+  if (!payload.dataset) {
+    document.getElementById("datasetError").innerText = "请输入数据集路径";
+    valid = false;
+  }
+  if (!payload.model_name) {
+    document.getElementById("modelNameError").innerText = "请输入模型名称";
+    valid = false;
+  }
+  if (!payload.config_content) {
+    document.getElementById("configContentError").innerText = "请输入配置内容";
+    valid = false;
+  }
+
+  if (!valid) return;
+
+  // 这里先做占位。你后端如果已有任务创建 API，
+  // 把下面注释替换成真实 fetch 即可。
+  showTaskMessage("前端表单校验已完成。下一步把这里对接你的任务创建接口。", true);
+});
+
+taskResetBtn.addEventListener("click", function () {
+  taskCreateForm.reset();
+  clearTaskErrors();
+});

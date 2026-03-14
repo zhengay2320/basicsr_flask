@@ -1,81 +1,130 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>任务详情</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
-</head>
-<body>
-    <div class="container">
-        <div class="topbar">
-            <h1>任务详情</h1>
-            <button onclick="window.location.href='/dashboard'">返回主页</button>
-        </div>
+{% extends "base.html" %}
 
-        <div class="form-box">
-            <h2>任务信息</h2>
-            <div id="taskInfo"></div>
+{% block title %}任务详情{% endblock %}
+{% block page_title %}任务详情{% endblock %}
+{% block page_subtitle %}兼顾原有详情逻辑、运行能力与统一后台视觉{% endblock %}
 
-            <div class="form-row action-row">
-                <button id="viewConfigBtn">查看/编辑配置</button>
-                <button id="exportTaskBtn">导出结果表格</button>
-                <button id="deleteTaskBtn" class="danger-btn">删除任务</button>
-            </div>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+{% endblock %}
 
-            <h2>启动新运行</h2>
-            <div class="form-row">
-                <label for="runName">运行名称</label>
-                <input id="runName" type="text" placeholder="可选">
-            </div>
+{% block content %}
+<script>
+  window.__TASK_ID__ = {{ task_id|tojson }};
+</script>
 
-            <div class="form-row">
-                <label for="gpuMode">GPU 模式</label>
-                <select id="gpuMode">
-                    <option value="single">single</option>
-                    <option value="multi">multi</option>
-                    <option value="cpu">cpu</option>
-                </select>
-            </div>
-
-            <div class="form-row">
-                <label for="gpuDevices">GPU 设备</label>
-                <input id="gpuDevices" type="text" placeholder="例如 0 或 0,1">
-            </div>
-
-            <div class="form-row">
-                <button id="startRunBtn">启动任务</button>
-            </div>
-
-            <div id="runMsg" class="msg-box"></div>
-
-            <h2>执行序列</h2>
-            <div id="runList"></div>
-        </div>
+<div class="task-detail-shell">
+  <div class="content-card task-detail-hero">
+    <div class="task-detail-hero-main">
+      <div class="hero-badge">TASK DETAIL</div>
+      <h2>任务详情</h2>
+      <p>查看当前任务信息、启动运行、导出结果、删除任务以及历史运行记录。</p>
     </div>
 
-    <!-- 删除任务弹窗 -->
-    <div id="deleteTaskModal" class="modal-mask" style="display:none;">
-        <div class="modal-card">
-            <h3>确认删除任务</h3>
-            <p>删除后该任务不会再显示在主页列表中。请输入当前登录密码确认删除。</p>
+    <div class="task-detail-hero-actions">
+      <button type="button" class="ghost-btn" onclick="window.location.href='/dashboard'">返回主页</button>
+    </div>
+  </div>
 
-            <div class="form-row">
-                <label for="deletePassword">登录密码</label>
-                <input id="deletePassword" type="password" placeholder="请输入当前登录密码">
-            </div>
+  <div class="task-detail-layout">
+    <div class="task-detail-main">
+      <div class="content-card detail-block">
+        <div class="section-title">任务信息</div>
+        <div id="taskInfo" class="detail-info-panel"></div>
+      </div>
 
-            <div id="deleteTaskMsg" class="msg-box"></div>
+      <div class="content-card detail-block">
+        <div class="section-title">运行启动</div>
 
-            <div class="modal-actions">
-                <button id="confirmDeleteTaskBtn" class="danger-btn">确认删除</button>
-                <button id="cancelDeleteTaskBtn" type="button">取消</button>
-            </div>
+        <div class="run-form-grid">
+          <div class="form-row">
+            <label>运行名称</label>
+            <input id="runName" type="text" placeholder="请输入运行名称，可为空">
+          </div>
+
+          <div class="form-row">
+            <label>GPU 模式</label>
+            <select id="gpuMode">
+              <option value="auto">auto</option>
+              <option value="cpu">cpu</option>
+              <option value="single">single</option>
+              <option value="multi">multi</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>GPU 设备</label>
+            <input id="gpuDevices" type="text" placeholder="例如：0 或 0,1">
+          </div>
         </div>
+
+        <div class="detail-actions">
+          <button type="button" class="primary-btn" id="startRunBtn">启动任务</button>
+          <button type="button" class="ghost-btn" id="viewConfigBtn">查看配置</button>
+          <button type="button" class="ghost-btn" id="exportTaskBtn">导出结果</button>
+          <button type="button" class="danger-soft-btn" id="deleteTaskBtn">删除任务</button>
+        </div>
+
+        <div id="runMsg" class="result-text task-result"></div>
+      </div>
+
+      <div class="content-card detail-block">
+        <div class="section-title">运行记录</div>
+        <div id="runList" class="run-list"></div>
+      </div>
     </div>
 
-    <script>
-        window.__TASK_ID__ = {{ task_id }};
-    </script>
-    <script src="{{ url_for('static', filename='js/task_detail.js') }}"></script>
-</body>
-</html>
+    <div class="task-detail-side">
+      <div class="content-card detail-side-card">
+        <div class="section-title">操作提示</div>
+        <div class="task-detail-tip-list">
+          <div class="task-detail-tip-item">
+            <span>▶</span>
+            <span>填写运行参数后点击“启动任务”</span>
+          </div>
+          <div class="task-detail-tip-item">
+            <span>⚙</span>
+            <span>“查看配置”会跳转到当前任务配置页</span>
+          </div>
+          <div class="task-detail-tip-item">
+            <span>📊</span>
+            <span>“导出结果”会下载当前任务结果 CSV</span>
+          </div>
+          <div class="task-detail-tip-item">
+            <span>🗑</span>
+            <span>删除任务前需要输入当前登录密码</span>
+          </div>
+          <div class="task-detail-tip-item">
+            <span>🖱</span>
+            <span>运行记录卡片可点击进入监控页</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="deleteTaskModal" class="custom-modal" style="display:none;">
+  <div class="custom-modal-mask"></div>
+  <div class="custom-modal-panel">
+    <div class="custom-modal-title">确认删除任务</div>
+    <div class="custom-modal-desc">请输入当前登录密码，确认后将删除该任务。</div>
+
+    <div class="form-row">
+      <label>当前登录密码</label>
+      <input id="deletePassword" type="password" placeholder="请输入密码">
+    </div>
+
+    <div id="deleteTaskMsg" class="result-text task-result"></div>
+
+    <div class="custom-modal-actions">
+      <button type="button" class="danger-soft-btn" id="confirmDeleteTaskBtn">确认删除</button>
+      <button type="button" class="ghost-btn" id="cancelDeleteTaskBtn">取消</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/task_detail.js') }}"></script>
+{% endblock %}

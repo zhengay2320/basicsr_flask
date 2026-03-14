@@ -2,65 +2,66 @@ const loginForm = document.getElementById("loginForm");
 const resultMessage = document.getElementById("resultMessage");
 
 function clearErrors() {
-    document.getElementById("usernameError").innerText = "";
-    document.getElementById("passwordError").innerText = "";
-    resultMessage.innerText = "";
+  document.getElementById("usernameError").innerText = "";
+  document.getElementById("passwordError").innerText = "";
+  resultMessage.innerText = "";
+}
+
+function showResult(text, ok = false) {
+  resultMessage.style.color = ok ? "#7ef0b1" : "#ff9d9d";
+  resultMessage.innerText = text;
 }
 
 loginForm.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    clearErrors();
+  e.preventDefault();
+  clearErrors();
 
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
 
-    let valid = true;
+  let valid = true;
 
-    if (!username) {
-        document.getElementById("usernameError").innerText = "用户名不能为空";
-        valid = false;
+  if (!username) {
+    document.getElementById("usernameError").innerText = "用户名不能为空";
+    valid = false;
+  }
+
+  if (!password) {
+    document.getElementById("passwordError").innerText = "密码不能为空";
+    valid = false;
+  }
+
+  if (!valid) return;
+
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username, password })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showResult(result.message || "登录失败", false);
+      return;
     }
 
-    if (!password) {
-        document.getElementById("passwordError").innerText = "密码不能为空";
-        valid = false;
-    }
+    const token = result.data.access_token;
+    const user = result.data.user || {};
 
-    if (!valid) return;
+    localStorage.setItem("access_token", token);
+    localStorage.setItem("user_theme", user.theme || "dark");
 
-    try {
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username,
-                password
-            })
-        });
+    showResult("登录成功，正在进入控制台...", true);
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            resultMessage.style.color = "#f56c6c";
-            resultMessage.innerText = result.message || "登录失败";
-            return;
-        }
-
-        const token = result.data.access_token;
-        localStorage.setItem("access_token", token);
-
-        resultMessage.style.color = "#67c23a";
-        resultMessage.innerText = "登录成功，正在跳转...";
-
-        setTimeout(() => {
-            window.location.href = "/dashboard";
-        }, 800);
-
-    } catch (error) {
-        resultMessage.style.color = "#f56c6c";
-        resultMessage.innerText = "网络异常，请稍后重试";
-        console.error(error);
-    }
+    setTimeout(function () {
+      window.location.href = "/dashboard";
+    }, 600);
+  } catch (error) {
+    console.error(error);
+    showResult("网络异常，请稍后重试", false);
+  }
 });

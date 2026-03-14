@@ -1,23 +1,51 @@
 {% extends "base.html" %}
 
 {% block title %}个人中心{% endblock %}
+{% block page_title %}个人中心{% endblock %}
+{% block page_subtitle %}查看你的账号信息与当前主题设置{% endblock %}
 
 {% block content %}
-<div class="auth-card">
-    <h2>当前用户信息</h2>
+<div class="profile-layout">
+  <div class="content-card profile-card">
+    <div class="section-title">当前用户信息</div>
 
-    <div class="profile-box">
-        <p><strong>ID：</strong><span id="userId">-</span></p>
-        <p><strong>用户名：</strong><span id="username">-</span></p>
-        <p><strong>邮箱：</strong><span id="email">-</span></p>
-        <p><strong>角色：</strong><span id="role">-</span></p>
-        <p><strong>主题：</strong><span id="theme">-</span></p>
-        <p><strong>状态：</strong><span id="status">-</span></p>
+    <div class="profile-info-grid">
+      <div class="info-item">
+        <span class="info-label">ID</span>
+        <strong id="userId">-</strong>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">用户名</span>
+        <strong id="username">-</strong>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">邮箱</span>
+        <strong id="email">-</strong>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">角色</span>
+        <strong id="role">-</strong>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">主题</span>
+        <strong id="theme">-</strong>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">状态</span>
+        <strong id="status">-</strong>
+      </div>
     </div>
 
-    <button id="logoutBtn" class="danger-btn">退出登录</button>
-    <div class="result-text" id="resultMessage"></div>
+    <div id="resultMessage" class="result-text profile-result"></div>
+  </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 {% endblock %}

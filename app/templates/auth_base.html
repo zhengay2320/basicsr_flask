@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}认证中心{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="auth-body">
+  <div class="auth-bg">
+    <div class="grid-lines"></div>
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="glow glow-c"></div>
+  </div>
+
+  <div class="auth-shell">
+    <section class="auth-brand-panel">
+      <div class="brand-chip">BASICSR · FLASK</div>
+      <h1>智能任务控制中心</h1>
+      <p>更酷炫的登录体验、统一后台布局、主题持久化与动态交互。</p>
+
+      <div class="brand-floating-card">
+        <div class="brand-floating-title">系统风格</div>
+        <div class="brand-tags">
+          <span>绿色</span>
+          <span>紫色</span>
+          <span>白天</span>
+          <span>夜间</span>
+        </div>
+      </div>
+
+      <div class="auth-pet" id="authPet">
+        <div class="auth-pet-body">🐱</div>
+        <div class="auth-pet-tip">喵～欢迎回来</div>
+      </div>
+    </section>
+
+    <section class="auth-form-panel">
+      {% block content %}{% endblock %}
+    </section>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

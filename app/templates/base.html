@@ -1,14 +1,84 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}BasicSR Platform{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}BasicSR Platform{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <div class="page-wrapper">
+<body class="app-body">
+  <div class="app-bg">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+    <span class="orb orb-4"></span>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-logo">B</div>
+        <div>
+          <div class="brand-name">BasicSR Studio</div>
+          <div class="brand-sub">Flask Control Panel</div>
+        </div>
+      </div>
+
+      <div class="user-card" id="globalUserCard">
+        <div class="avatar" id="userAvatar">U</div>
+        <div class="user-meta">
+          <div class="name" id="globalUsername">未登录</div>
+          <div class="sub" id="globalUserRole">游客</div>
+          <div class="sub" id="globalUserEmail">--</div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a class="nav-item" href="/dashboard"><span>🏠</span><span>仪表盘</span></a>
+        <a class="nav-item" href="/tasks/create"><span>🛠️</span><span>创建任务</span></a>
+        <a class="nav-item" href="/tasks/detail"><span>📄</span><span>任务详情</span></a>
+        <a class="nav-item" href="/profile"><span>👤</span><span>个人中心</span></a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="mini-card">
+          <div class="mini-title">视觉主题</div>
+          <select id="themeSelect" class="theme-select">
+            <option value="light">白天模式</option>
+            <option value="dark">夜间模式</option>
+            <option value="green">绿色风格</option>
+            <option value="purple">紫色风格</option>
+            <option value="ocean">海洋风格</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div>
+          <div class="page-title">{% block page_title %}控制台{% endblock %}</div>
+          <div class="page-subtitle">{% block page_subtitle %}欢迎使用 BasicSR Flask 平台{% endblock %}</div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="themeCycleBtn" class="ghost-btn" type="button">切换风格</button>
+        </div>
+      </header>
+
+      <section class="page-content page-enter">
         {% block content %}{% endblock %}
-    </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="pet-widget" id="petWidget" title="点我一下">
+    <div class="pet-face">🐱</div>
+    <div class="pet-bubble">今天也要稳定运行～</div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
