@@ -1358,3 +1358,138 @@ button:hover {
         width: 100%;
     }
 }
+/* ===== running task / status badge enhancements ===== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+}
+
+.status-badge.running {
+    background: linear-gradient(135deg, var(--success, #10b981), #22c55e);
+}
+
+.status-badge.stopped {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+}
+
+.status-badge.failed {
+    background: linear-gradient(135deg, var(--danger, #ef4444), #f97316);
+}
+
+.status-badge.success {
+    background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+}
+
+.status-badge.pending {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+}
+
+.task-run-summary {
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.running-shell {
+    display: grid;
+    gap: 20px;
+}
+
+.running-header-card {
+    padding: 24px;
+}
+
+.running-header-card h2 {
+    margin: 10px 0 8px;
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.running-header-card p {
+    margin: 0;
+    color: var(--subtext, #667085);
+    line-height: 1.8;
+}
+
+.running-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.running-task-groups {
+    display: grid;
+    gap: 18px;
+}
+
+.running-task-group {
+    padding: 22px;
+}
+
+.running-task-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.running-task-group-head h3 {
+    margin: 0 0 8px;
+}
+
+.running-task-group-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.running-run-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.run-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.run-card-head h4 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.enter-run-btn,
+.enter-task-btn {
+    border: none;
+    cursor: pointer;
+}
+
+.task-card .status-badge,
+.run-card .status-badge {
+    margin-left: auto;
+}
+
+@media (max-width: 768px) {
+    .running-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .running-task-group-head {
+        flex-direction: column;
+    }
+}

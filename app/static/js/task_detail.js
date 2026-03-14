@@ -19,6 +19,53 @@ const deleteTaskMsg = document.getElementById("deleteTaskMsg");
 const confirmDeleteTaskBtn = document.getElementById("confirmDeleteTaskBtn");
 const cancelDeleteTaskBtn = document.getElementById("cancelDeleteTaskBtn");
 
+if (!taskId || String(taskId).trim() === "") {
+    alert("请先从任务列表进入具体任务详情页。");
+    window.location.href = "/dashboard";
+}
+
+function isActiveRunStatus(status) {
+    const s = String(status || "").toLowerCase();
+    return (
+        s.includes("running") ||
+        s.includes("pending") ||
+        s.includes("queued") ||
+        s.includes("resume") ||
+        s.includes("启动") ||
+        s.includes("运行") ||
+        s.includes("执行") ||
+        s.includes("恢复")
+    ) && !(
+        s.includes("success") ||
+        s.includes("failed") ||
+        s.includes("stopped") ||
+        s.includes("finished") ||
+        s.includes("completed") ||
+        s.includes("停止") ||
+        s.includes("失败") ||
+        s.includes("完成") ||
+        s.includes("结束")
+    );
+}
+
+function getStatusBadgeClass(status) {
+    const s = String(status || "").toLowerCase();
+
+    if (s.includes("success") || s.includes("完成")) {
+        return "status-badge success";
+    }
+    if (s.includes("failed") || s.includes("失败")) {
+        return "status-badge failed";
+    }
+    if (s.includes("stop") || s.includes("停止")) {
+        return "status-badge stopped";
+    }
+    if (isActiveRunStatus(status)) {
+        return "status-badge running";
+    }
+    return "status-badge pending";
+}
+
 async function requestJson(url, options = {}) {
     const resp = await fetch(url, options);
     const result = await resp.json();
@@ -52,6 +99,8 @@ function formatMetricSummary(bestMaxJson, bestMinJson) {
 }
 
 async function loadTask() {
+    if (!taskId) return;
+
     const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
         headers: {
             "Authorization": "Bearer " + token3
@@ -69,7 +118,7 @@ async function loadTask() {
         <p><strong>任务名:</strong> ${task.task_name}</p>
         <p><strong>描述:</strong> ${task.description ? task.description : "暂无描述"}</p>
         <p><strong>类型:</strong> ${task.task_type}</p>
-        <p><strong>状态:</strong> ${task.status}</p>
+        <p><strong>状态:</strong> <span class="${getStatusBadgeClass(task.status)}">${task.status || "-"}</span></p>
         <p><strong>模板:</strong> ${task.template_path || "-"}</p>
         <p><strong>当前配置ID:</strong> ${task.current_config_id || "-"}</p>
         <p><strong>当前配置路径:</strong> ${task.current_config ? task.current_config.yaml_path : "-"}</p>
@@ -77,6 +126,8 @@ async function loadTask() {
 }
 
 async function loadRuns() {
+    if (!taskId) return;
+
     const { resp, result } = await requestJson(`/api/runs/task/${taskId}`, {
         headers: {
             "Authorization": "Bearer " + token3
@@ -105,7 +156,7 @@ async function loadRuns() {
             <p><strong>运行ID:</strong> ${run.id}</p>
             <p><strong>任务ID:</strong> ${run.task_id}</p>
             <p><strong>运行名:</strong> ${run.run_name || "-"}</p>
-            <p><strong>状态:</strong> ${run.status}</p>
+            <p><strong>状态:</strong> <span class="${getStatusBadgeClass(run.status)}">${run.status || "-"}</span></p>
             <p><strong>运行类型:</strong> ${run.run_type || "-"}</p>
             <p><strong>GPU模式:</strong> ${run.gpu_mode}</p>
             <p><strong>GPU设备:</strong> ${run.gpu_devices || "-"}</p>
@@ -124,33 +175,36 @@ async function loadRuns() {
     });
 }
 
-startRunBtn.addEventListener("click", async () => {
-    runMsg.innerText = "";
+if (startRunBtn) {
+    startRunBtn.addEventListener("click", async () => {
+        runMsg.innerText = "";
 
-    const payload = {
-        task_id: taskId,
-        run_name: document.getElementById("runName").value.trim(),
-        gpu_mode: document.getElementById("gpuMode").value,
-        gpu_devices: document.getElementById("gpuDevices").value.trim()
-    };
+        const payload = {
+            task_id: taskId,
+            run_name: document.getElementById("runName").value.trim(),
+            gpu_mode: document.getElementById("gpuMode").value,
+            gpu_devices: document.getElementById("gpuDevices").value.trim()
+        };
 
-    const { resp, result } = await requestJson("/api/runs", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token3
-        },
-        body: JSON.stringify(payload)
+        const { resp, result } = await requestJson("/api/runs", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token3
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+            runMsg.innerText = result.message || "启动失败";
+            return;
+        }
+
+        runMsg.innerText = `任务已启动，run_id=${result.data.run_id}`;
+        await loadTask();
+        await loadRuns();
     });
-
-    if (!resp.ok) {
-        runMsg.innerText = result.message || "启动失败";
-        return;
-    }
-
-    runMsg.innerText = `任务已启动，run_id=${result.data.run_id}`;
-    await loadRuns();
-});
+}
 
 if (viewConfigBtn) {
     viewConfigBtn.addEventListener("click", () => {

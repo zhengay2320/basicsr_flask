@@ -47,3 +47,12 @@ def task_detail_page_with_id(task_id):
 @web_bp.route("/tasks/<int:task_id>")
 def task_detail_page_legacy(task_id):
     return render_template("task_detail.html", task_id=task_id)
+
+
+# @web_bp.route("/dashboard")
+# def dashboard_page():
+#     return render_template("dashboard.html")
+
+@web_bp.route("/running-tasks")
+def running_tasks_page():
+    return render_template("running_tasks.html")
