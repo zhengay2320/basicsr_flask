@@ -1,0 +1,23 @@
+1. 安装依赖
+pip install flask flask-sqlalchemy flask-migrate flask-jwt-extended flask-cors pymysql
+
+2. 初始化迁移
+flask db init
+flask db migrate -m "init tables"
+flask db upgrade
+
+
+如果你用的是 run.py，记得设置：
+
+export FLASK_APP=run.py
+
+
+Windows 下：
+
+set FLASK_APP=run.py
+
+
+
+D:\ProgramData\Anaconda3\envs\zhengay\python  basicsr/train.py -opt E:\myMLPro\storage\users\1\tasks\6\configs\task_6_v1.yml
+
+python scripts/data_preparation/generate_meta_info.py --input G:\testResult\lr --root E:\myMLPro\datasets --meta_info E:\myMLPro\datasets\menta

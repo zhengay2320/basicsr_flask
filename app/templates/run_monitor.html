@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>训练监控</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>训练监控</h1>
+            <button onclick="history.back()">返回上一页</button>
+        </div>
+
+        <div class="form-box">
+            <div id="statusBar" class="status-bar">状态加载中...</div>
+            <div id="tbPathBar" class="tb-path-bar">TensorBoard目录：-</div>
+            <div id="bestWorstBox" class="form-box"></div>
+
+            <div class="form-row action-row">
+                <button id="stopRunBtn">停止当前运行</button>
+                <button id="resumeRunBtn">恢复当前运行</button>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="logTab">日志窗口</button>
+                <button class="tab-btn" data-tab="curveTab">曲线监控</button>
+                <button class="tab-btn" data-tab="hardwareTab">硬件监控</button>
+            </div>
+
+            <!-- 日志窗口 -->
+            <div id="logTab" class="tab-panel active">
+                <div class="form-row">
+                    <label for="logType">日志类型</label>
+                    <select id="logType">
+                        <option value="stdout">stdout</option>
+                        <option value="stderr">stderr</option>
+                    </select>
+                </div>
+                <pre id="logWindow" class="log-window"></pre>
+            </div>
+
+            <!-- 曲线监控 -->
+            <div id="curveTab" class="tab-panel">
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h3>Loss 曲线</h3>
+                        <div id="lossChart" class="chart-box"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Metric 曲线</h3>
+                        <div id="metricChart" class="chart-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 硬件监控 -->
+            <div id="hardwareTab" class="tab-panel">
+                <div class="hardware-summary">
+                    <div class="hardware-card">
+                        <h3>系统概览</h3>
+                        <div id="systemStats"></div>
+                    </div>
+                    <div class="hardware-card">
+                        <h3>GPU 概览</h3>
+                        <div id="gpuStats"></div>
+                    </div>
+                </div>
+
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h3>GPU 利用率曲线</h3>
+                        <div id="gpuUtilChart" class="chart-box"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>GPU 显存占用曲线</h3>
+                        <div id="gpuMemChart" class="chart-box"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>CPU 使用率曲线</h3>
+                        <div id="cpuChart" class="chart-box"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>内存使用率曲线</h3>
+                        <div id="memChart" class="chart-box"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.__RUN_ID__ = {{ run_id }};
+    </script>
+    <script src="{{ url_for('static', filename='js/run_monitor.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}用户登录{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <h2>用户登录</h2>
+    <form id="loginForm" class="auth-form">
+        <div class="form-item">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username" placeholder="请输入用户名">
+            <div class="error-text" id="usernameError"></div>
+        </div>
+
+        <div class="form-item">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" placeholder="请输入密码">
+            <div class="error-text" id="passwordError"></div>
+        </div>
+
+        <button type="submit" class="primary-btn">登录</button>
+
+        <div class="result-text" id="resultMessage"></div>
+    </form>
+
+    <div class="bottom-link">
+        还没有账号？<a href="/register">去注册</a>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+{% endblock %}

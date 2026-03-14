@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <h2>当前用户信息</h2>
+
+    <div class="profile-box">
+        <p><strong>ID：</strong><span id="userId">-</span></p>
+        <p><strong>用户名：</strong><span id="username">-</span></p>
+        <p><strong>邮箱：</strong><span id="email">-</span></p>
+        <p><strong>角色：</strong><span id="role">-</span></p>
+        <p><strong>主题：</strong><span id="theme">-</span></p>
+        <p><strong>状态：</strong><span id="status">-</span></p>
+    </div>
+
+    <button id="logoutBtn" class="danger-btn">退出登录</button>
+    <div class="result-text" id="resultMessage"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>任务主页</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>任务主页</h1>
+            <div>
+                <button id="createTaskBtn">创建任务</button>
+                <button id="logoutBtn">退出登录</button>
+            </div>
+        </div>
+
+        <div id="taskEmpty" class="empty-box" style="display:none;">
+            当前还没有任务，请先创建一个任务。
+        </div>
+
+        <div id="taskList" class="task-list"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

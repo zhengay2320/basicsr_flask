@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>任务配置管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>任务配置管理</h1>
+            <button onclick="history.back()">返回任务页</button>
+        </div>
+
+        <div class="form-box">
+            <div class="form-row">
+                <label>当前配置内容（可在线修改）</label>
+                <textarea id="configEditor" rows="28" class="code-editor"></textarea>
+            </div>
+
+            <div class="form-row">
+                <label>保存说明（可选）</label>
+                <input id="configName" type="text" placeholder="例如：调整学习率后的版本">
+            </div>
+
+            <div class="form-row">
+                <button id="saveVersionBtn">保存为新版本</button>
+            </div>
+
+            <div id="msgBox" class="msg-box"></div>
+        </div>
+
+        <div class="form-box">
+            <h2>历史版本</h2>
+            <div id="versionList"></div>
+        </div>
+    </div>
+
+    <script>
+        window.__TASK_ID__ = {{ task_id }};
+    </script>
+    <script src="{{ url_for('static', filename='js/task_config.js') }}"></script>
+</body>
+</html>

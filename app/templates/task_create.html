@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>创建任务</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>创建任务</h1>
+            <button onclick="window.location.href='/dashboard'">返回主页</button>
+        </div>
+
+        <div class="form-box">
+            <!-- 任务名称 -->
+            <div class="form-row">
+                <label>任务名称</label>
+                <input id="taskName" type="text" placeholder="请输入任务名称">
+            </div>
+
+            <!-- 任务类型 -->
+            <div class="form-row">
+                <label>任务类型</label>
+                <select id="taskType">
+                    <option value="train">train</option>
+                    <option value="test">test</option>
+                </select>
+            </div>
+
+            <!-- 任务描述 -->
+            <div class="form-row">
+                <label>任务描述</label>
+                <textarea id="description" rows="3"></textarea>
+            </div>
+
+            <!-- 模板选择 -->
+            <div class="form-row">
+                <label>选择主模板</label>
+                <select id="templateSelect"></select>
+            </div>
+
+            <!-- 模型选择 -->
+            <div class="form-row">
+                <label>模型类型 model_type</label>
+                <select id="modelType"></select>
+            </div>
+
+            <!-- 网络类型选择 -->
+            <div class="form-row">
+                <label>网络类型 network_g.type</label>
+                <select id="networkGType"></select>
+            </div>
+
+            <!-- network_g 参数 -->
+            <div class="form-row">
+                <label>network_g 参数来源模板</label>
+                <select id="networkGSourceTemplate"></select>
+                <button type="button" id="fillNetworkGBtn">从模板填充 network_g</button>
+            </div>
+
+            <div class="form-row">
+                <label>network_g 参数编辑区</label>
+                <textarea id="networkGEditor" rows="14" class="code-editor"></textarea>
+            </div>
+
+            <!-- 数据集类型 -->
+            <div class="form-row">
+                <label>训练数据集类型 datasets.train.type</label>
+                <select id="trainDatasetType"></select>
+            </div>
+
+            <!-- 数据集参数 -->
+            <div class="form-row">
+                <label>datasets.train 参数来源模板</label>
+                <select id="trainDatasetSourceTemplate"></select>
+                <button type="button" id="fillTrainDatasetBtn">从模板填充 datasets.train</button>
+            </div>
+
+            <div class="form-row">
+                <label>datasets.train 参数编辑区</label>
+                <textarea id="trainDatasetEditor" rows="12" class="code-editor"></textarea>
+            </div>
+
+            <!-- 验证数据集类型 -->
+            <div class="form-row">
+                <label>验证数据集类型 datasets.val.type</label>
+                <select id="valDatasetType"></select>
+            </div>
+
+            <!-- 验证数据集参数 -->
+            <div class="form-row">
+                <label>datasets.val 参数来源模板</label>
+                <select id="valDatasetSourceTemplate"></select>
+                <button type="button" id="fillValDatasetBtn">从模板填充 datasets.val</button>
+            </div>
+
+            <div class="form-row">
+                <label>datasets.val 参数编辑区</label>
+                <textarea id="valDatasetEditor" rows="12" class="code-editor"></textarea>
+            </div>
+
+            <!-- 损失函数选择 -->
+            <div class="form-row">
+                <label>损失类型 train.pixel_opt.type</label>
+                <select id="lossType"></select>
+            </div>
+
+            <!-- 损失函数参数 -->
+            <div class="form-row">
+                <label>pixel_opt 参数来源模板</label>
+                <select id="lossSourceTemplate"></select>
+                <button type="button" id="fillLossBtn">从模板填充 train.pixel_opt</button>
+            </div>
+
+            <div class="form-row">
+                <label>train.pixel_opt 参数编辑区</label>
+                <textarea id="lossEditor" rows="10" class="code-editor"></textarea>
+            </div>
+
+            <!-- 训练超参数（优化器 / 学习率 等） -->
+            <div class="form-row">
+                <label>train 训练参数（optim / lr / scheduler 等）</label>
+                <textarea id="trainEditor" rows="10" class="code-editor"></textarea>
+            </div>
+
+            <!-- 指标参数 -->
+            <div class="form-row">
+                <label>指标来源模板</label>
+                <select id="metricSourceTemplate"></select>
+                <button type="button" id="fillMetricBtn">从模板填充 val.metrics</button>
+            </div>
+
+            <div class="form-row">
+                <label>val.metrics 参数编辑区</label>
+                <textarea id="metricEditor" rows="12" class="code-editor"></textarea>
+            </div>
+
+            <!-- 手动补丁 -->
+            <div class="form-row">
+                <label>额外手工补丁（可选）</label>
+                <textarea id="manualPatch" rows="12" class="code-editor"></textarea>
+            </div>
+
+            <!-- 预览模板 -->
+            <div class="form-row">
+                <label>主模板预览</label>
+                <pre id="templatePreview" class="preview-box"></pre>
+            </div>
+
+            <!-- 提交按钮 -->
+            <div class="form-row">
+                <button id="submitBtn">创建任务</button>
+            </div>
+
+            <div id="messageBox" class="msg-box"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/task_create.js') }}"></script>
+</body>
+</html>
