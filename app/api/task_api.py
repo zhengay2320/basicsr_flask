@@ -1,15 +1,12 @@
-
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.extensions import db
-
-
 from app.models.task import Task
 from app.models.task_config import TaskConfig
-from app.services.task_service import TaskService
-from app.models.user import User
 from app.models.task_run import TaskRun
+from app.models.user import User
+from app.services.task_service import TaskService
 
 task_api_bp = Blueprint("task_api", __name__)
 
@@ -59,8 +56,14 @@ def list_templates():
 @jwt_required()
 def list_modules():
     service = get_task_service()
-    data = service.list_modules()
-    return jsonify({"code": 200, "message": "ok", "data": data})
+    try:
+        data = service.list_modules()
+        return jsonify({"code": 200, "message": "ok", "data": data})
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"加载 BasicSR 注册表失败: {str(e)}"
+        }), 500
 
 
 @task_api_bp.route("/template-detail", methods=["GET"])
@@ -178,6 +181,7 @@ def get_task(task_id):
         }
     })
 
+
 @task_api_bp.route("/<int:task_id>", methods=["DELETE"])
 @jwt_required()
 def delete_task(task_id):
@@ -227,41 +231,4 @@ def delete_task(task_id):
             "task_id": task.id,
             "is_deleted": task.is_deleted
         }
-    })
-
-
-
-
-@task_api_bp.route('/get_model_config', methods=['GET'])
-def get_model_config():
-    """根据模板加载并过滤符合条件的模型"""
-    model_name = request.args.get('model_name')  # 获取前端传过来的模型名
-    yaml_path = "path_to_your_model_template.yml"  # 你的模板文件路径
-
-    # 加载模板
-    yaml_data = load_yaml_config(yaml_path)
-
-    # 获取符合条件的模型
-    valid_models = filter_model_config(yaml_data, model_name)
-
-    return jsonify({
-        'success': True,
-        'data': {
-            'models': valid_models
-        }
-    })
-
-
-@task_api_bp.route('/get_training_config', methods=['GET'])
-def get_training_config():
-    """加载并返回训练配置"""
-    yaml_path = "path_to_your_model_template.yml"  # 你的模板文件路径
-    yaml_data = load_yaml_config(yaml_path)  # 加载 YML 配置
-
-    # 获取训练配置
-    training_config = get_training_config(yaml_data)
-
-    return jsonify({
-        'success': True,
-        'data': training_config
     })
