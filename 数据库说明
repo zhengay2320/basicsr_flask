@@ -22,27 +22,27 @@ set FLASK_APP=run.py
 1. 查看改动（可选但建议）
 在提交之前，先确认一下你到底改了哪些文件：
 
-Bash
+
 git status
 你会看到修改过的文件显示为红色。
 
 2. 第一斧：添加到暂存区 (Add)
 把你的改动告诉 Git，准备打包：
 
-Bash
+
 git add .
 . 代表当前目录下所有的修改。如果你只想提交某个特定文件，可以用 git add 文件名。
 
 3. 第二斧：签署提交说明 (Commit)
 为这次改动写一个简短的说明，告诉未来的自己（或同事）你改了什么：
 
-Bash
-git commit -m "feat: 修改了 XXX 功能并优化了模型加载逻辑"
+
+git commit -m "feat: 修改了部分逻辑"
 提示：好的提交记录（Commit Message）在科研协作中非常重要。建议使用 feat: (新功能), fix: (修 Bug), docs: (改文档) 等前缀。
 
 4. 第三斧：推送到云端 (Push)
 把本地的记录同步到 GitHub 上：
 
-Bash
+
 git push
 因为你之前已经用了 -u origin main，所以现在直接输入 git push 即可。
