@@ -12,6 +12,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("access_token");
     window.location.href = "/login";
 });
+
 async function loadTasks() {
     const resp = await fetch("/api/tasks?_ts=" + Date.now(), {
         headers: {
@@ -43,20 +44,26 @@ async function loadTasks() {
         const div = document.createElement("div");
         div.className = "task-card";
         div.innerHTML = `
-    <h3>${task.task_name}</h3>
-   <p class="task-desc"><strong>描述：</strong>${task.description ? task.description : "暂无描述"}</p>
-    <p>类型：${task.task_type}</p>
-    <p>状态：${task.status}</p>
-    <p>模板：${task.template_path || "-"}</p>
-    <button data-id="${task.id}">进入任务</button>
-`;
+            <div class="task-card-head">
+                <h3 class="task-title">${task.task_name}</h3>
+                <div class="task-status">${task.status}</div>
+            </div>
 
-        div.querySelector("button").addEventListener("click", () => {
+            <p class="task-desc"><strong>描述：</strong>${task.description ? task.description : "暂无描述"}</p>
+            <p><strong>类型：</strong>${task.task_type}</p>
+            <p><strong>模板：</strong>${task.template_path || "-"}</p>
+
+            <div class="task-card-actions">
+                <button class="enter-btn" data-id="${task.id}">进入任务</button>
+            </div>
+        `;
+
+        div.querySelector(".enter-btn").addEventListener("click", () => {
             window.location.href = `/tasks/${task.id}`;
         });
+
         taskList.appendChild(div);
     });
 }
-
 
 loadTasks();

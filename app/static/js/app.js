@@ -1,5 +1,8 @@
 const APP_THEME_KEY = "user_theme";
-const token = localStorage.getItem("access_token");
+
+function getToken() {
+  return localStorage.getItem("access_token") || "";
+}
 
 function safeText(value, fallback = "-") {
   return value === null || value === undefined || value === "" ? fallback : value;
@@ -23,17 +26,19 @@ function fillUserCard(user) {
   const emailEl = document.getElementById("globalUserEmail");
   const avatarEl = document.getElementById("userAvatar");
 
-  if (usernameEl) usernameEl.innerText = safeText(user.username);
-  if (roleEl) roleEl.innerText = safeText(user.role);
-  if (emailEl) emailEl.innerText = safeText(user.email);
-  if (avatarEl) avatarEl.innerText = (safeText(user.username, "U")).charAt(0).toUpperCase();
+  const username = safeText(user.username, "用户");
+  const role = safeText(user.role, "普通用户");
+  const email = safeText(user.email, "--");
+
+  if (usernameEl) usernameEl.textContent = username;
+  if (roleEl) roleEl.textContent = role;
+  if (emailEl) emailEl.textContent = email;
+  if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 }
 
 async function fetchCurrentUser() {
-  if (!token) {
-    window.location.href = "/login";
-    return null;
-  }
+  const token = getToken();
+  if (!token) return null;
 
   try {
     const response = await fetch("/api/auth/me", {
@@ -46,14 +51,13 @@ async function fetchCurrentUser() {
     const result = await response.json();
 
     if (!response.ok) {
-      localStorage.removeItem("access_token");
-      window.location.href = "/login";
+      console.error(result.message || "load current user failed");
       return null;
     }
 
-    const user = result.data;
+    const user = result.data || {};
     fillUserCard(user);
-    applyTheme(user.theme || "dark");
+    applyTheme(user.theme || localStorage.getItem(APP_THEME_KEY) || "dark");
     return user;
   } catch (error) {
     console.error("load current user failed:", error);
@@ -64,6 +68,7 @@ async function fetchCurrentUser() {
 async function updateTheme(theme) {
   applyTheme(theme);
 
+  const token = getToken();
   if (!token) return;
 
   try {
@@ -109,10 +114,11 @@ function bindThemeCycle() {
   if (!themeCycleBtn) return;
 
   const themes = ["light", "dark", "green", "purple", "ocean"];
+
   themeCycleBtn.addEventListener("click", function () {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
-    const index = themes.indexOf(current);
-    const next = themes[(index + 1) % themes.length];
+    const currentIndex = themes.indexOf(current);
+    const next = themes[(currentIndex + 1) % themes.length];
     updateTheme(next);
   });
 }
@@ -142,188 +148,3 @@ document.addEventListener("DOMContentLoaded", async function () {
   initPet();
   await fetchCurrentUser();
 });
-
-.form-item select,
-.form-item textarea,
-.form-item input {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  outline: none;
-  padding: 14px 16px;
-  color: var(--text);
-  background: var(--panel-strong);
-  transition: .22s ease;
-  font: inherit;
-}
-
-.form-item input,
-.form-item select {
-  min-height: 50px;
-}
-
-.form-item textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.form-item input:focus,
-.form-item select:focus,
-.form-item textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
-  transform: translateY(-1px);
-}
-
-.light-error {
-  color: var(--danger);
-  min-height: 18px;
-  margin-top: 8px;
-  font-size: 13px;
-}
-
-.task-page-grid,
-.task-detail-grid {
-  display: grid;
-  gap: 18px;
-}
-
-.task-page-grid {
-  grid-template-columns: 1.35fr .65fr;
-}
-
-.task-detail-grid {
-  grid-template-columns: 1fr 320px;
-}
-
-.task-form-card,
-.detail-main-card,
-.detail-config-card,
-.detail-log-card {
-  min-width: 0;
-}
-
-.helper-card,
-.detail-side-card {
-  align-self: start;
-}
-
-.form-row {
-  margin-bottom: 18px;
-}
-
-.two-col {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.task-form-actions,
-.detail-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.task-result {
-  margin-top: 14px;
-  min-height: 22px;
-}
-
-.helper-list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--subtext);
-  line-height: 1.9;
-}
-
-.detail-info-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.code-panel {
-  margin: 0;
-  padding: 18px;
-  border-radius: 18px;
-  background: rgba(0, 0, 0, 0.18);
-  color: var(--text);
-  overflow: auto;
-  line-height: 1.7;
-  font-family: Consolas, Monaco, monospace;
-  border: 1px solid var(--border);
-}
-
-.timeline-list {
-  display: grid;
-  gap: 14px;
-}
-
-.timeline-item {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 14px 0;
-  border-bottom: 1px dashed var(--border);
-}
-
-.timeline-item:last-child {
-  border-bottom: 0;
-}
-
-.timeline-dot {
-  width: 12px;
-  height: 12px;
-  margin-top: 7px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 14%, transparent);
-}
-
-.timeline-title {
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.timeline-sub {
-  color: var(--subtext);
-  font-size: 13px;
-}
-
-.empty-state-card {
-  text-align: center;
-  padding: 52px 24px;
-}
-
-.empty-emoji {
-  font-size: 72px;
-  margin-bottom: 14px;
-}
-
-.empty-state-card h2 {
-  margin: 0 0 10px;
-}
-
-.empty-state-card p {
-  margin: 0;
-  color: var(--subtext);
-}
-
-@media (max-width: 1180px) {
-  .task-page-grid,
-  .task-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .two-col,
-  .detail-info-grid {
-    grid-template-columns: 1fr;
-  }
-}
