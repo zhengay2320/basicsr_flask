@@ -1,44 +1,57 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>任务配置管理</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
-</head>
-<body>
-    <div class="container">
-        <div class="topbar">
-            <h1>任务配置管理</h1>
-            <button onclick="history.back()">返回任务页</button>
-        </div>
+{% extends "base.html" %}
 
-        <div class="form-box">
-            <div class="form-row">
-                <label>当前配置内容（可在线修改）</label>
-                <textarea id="configEditor" rows="28" class="code-editor"></textarea>
-            </div>
+{% block title %}任务配置管理{% endblock %}
+{% block page_title %}任务配置管理{% endblock %}
+{% block page_subtitle %}保留原有在线编辑与版本保存逻辑，仅统一页面布局和主题视觉{% endblock %}
 
-            <div class="form-row">
-                <label>保存说明（可选）</label>
-                <input id="configName" type="text" placeholder="例如：调整学习率后的版本">
-            </div>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/task.css') }}">
+{% endblock %}
 
-            <div class="form-row">
-                <button id="saveVersionBtn">保存为新版本</button>
-            </div>
+{% block content %}
+<div class="config-shell">
+  <div class="config-header-card content-card">
+    <div>
+      <div class="hero-badge">CONFIG MANAGER</div>
+      <h2>任务配置管理</h2>
+      <p>在线编辑当前配置、保存版本，并查看任务配置历史。</p>
+    </div>
+    <div class="config-header-actions">
+      <button class="ghost-btn" type="button" onclick="history.back()">返回任务页</button>
+    </div>
+  </div>
 
-            <div id="msgBox" class="msg-box"></div>
-        </div>
+  <div class="config-grid">
+    <div class="content-card config-editor-card">
+      <div class="section-title">当前配置内容（可在线修改）</div>
 
-        <div class="form-box">
-            <h2>历史版本</h2>
-            <div id="versionList"></div>
-        </div>
+      <div class="form-row">
+        <textarea id="configEditor" rows="28" class="code-editor"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="configName">保存说明（可选）</label>
+        <input id="configName" type="text" placeholder="例如：调整学习率后的版本">
+      </div>
+
+      <div class="detail-actions">
+        <button id="saveVersionBtn" class="primary-btn" type="button">保存为新版本</button>
+      </div>
+
+      <div id="msgBox" class="msg-box"></div>
     </div>
 
-    <script>
-        window.__TASK_ID__ = {{ task_id }};
-    </script>
-    <script src="{{ url_for('static', filename='js/task_config.js') }}"></script>
-</body>
-</html>
+    <div class="content-card config-version-card detail-side-card">
+      <div class="section-title">历史版本</div>
+      <div id="versionList" class="timeline-list"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.__TASK_ID__ = {{ task_id }};
+</script>
+<script src="{{ url_for('static', filename='js/task_config.js') }}"></script>
+{% endblock %}
