@@ -1,8 +1,3 @@
-const token3 = localStorage.getItem("access_token");
-if (!token3) {
-    window.location.href = "/login";
-}
-
 const taskId = window.__TASK_ID__;
 const taskInfo = document.getElementById("taskInfo");
 const runList = document.getElementById("runList");
@@ -24,27 +19,36 @@ if (!taskId || String(taskId).trim() === "") {
     window.location.href = "/dashboard";
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 function isActiveRunStatus(status) {
     const s = String(status || "").toLowerCase();
     return (
-        s.includes("running") ||
-        s.includes("pending") ||
-        s.includes("queued") ||
-        s.includes("resume") ||
-        s.includes("启动") ||
-        s.includes("运行") ||
-        s.includes("执行") ||
-        s.includes("恢复")
-    ) && !(
-        s.includes("success") ||
-        s.includes("failed") ||
-        s.includes("stopped") ||
-        s.includes("finished") ||
-        s.includes("completed") ||
-        s.includes("停止") ||
-        s.includes("失败") ||
-        s.includes("完成") ||
-        s.includes("结束")
+        (
+            s.includes("running") ||
+            s.includes("pending") ||
+            s.includes("queued") ||
+            s.includes("resume") ||
+            s.includes("启动") ||
+            s.includes("运行") ||
+            s.includes("执行") ||
+            s.includes("恢复")
+        ) && !(
+            s.includes("success") ||
+            s.includes("failed") ||
+            s.includes("stopped") ||
+            s.includes("finished") ||
+            s.includes("completed") ||
+            s.includes("停止") ||
+            s.includes("失败") ||
+            s.includes("完成") ||
+            s.includes("结束")
+        )
     );
 }
 
@@ -67,9 +71,7 @@ function getStatusBadgeClass(status) {
 }
 
 async function requestJson(url, options = {}) {
-    const resp = await fetch(url, options);
-    const result = await resp.json();
-    return { resp, result };
+    return apiFetch(url, options);
 }
 
 function formatMetricSummary(bestMaxJson, bestMinJson) {
@@ -87,7 +89,7 @@ function formatMetricSummary(bestMaxJson, bestMinJson) {
     const items = metricNames.map(name => {
         const maxVal = bestMax[name] !== undefined ? bestMax[name] : "-";
         const minVal = bestMin[name] !== undefined ? bestMin[name] : "-";
-        return `<p><strong>${name}</strong>：max=${maxVal}，min=${minVal}</p>`;
+        return `<p><strong>${escapeHtml(name)}</strong>：max=${escapeHtml(maxVal)}，min=${escapeHtml(minVal)}</p>`;
     });
 
     return `
@@ -102,9 +104,7 @@ async function loadTask() {
     if (!taskId) return;
 
     const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
-        headers: {
-            "Authorization": "Bearer " + token3
-        }
+        method: "GET"
     });
 
     if (!resp.ok) {
@@ -114,14 +114,14 @@ async function loadTask() {
 
     const task = result.data;
     taskInfo.innerHTML = `
-        <p><strong>ID:</strong> ${task.id}</p>
-        <p><strong>任务名:</strong> ${task.task_name}</p>
-        <p><strong>描述:</strong> ${task.description ? task.description : "暂无描述"}</p>
-        <p><strong>类型:</strong> ${task.task_type}</p>
-        <p><strong>状态:</strong> <span class="${getStatusBadgeClass(task.status)}">${task.status || "-"}</span></p>
-        <p><strong>模板:</strong> ${task.template_path || "-"}</p>
-        <p><strong>当前配置ID:</strong> ${task.current_config_id || "-"}</p>
-        <p><strong>当前配置路径:</strong> ${task.current_config ? task.current_config.yaml_path : "-"}</p>
+        <p><strong>ID:</strong> ${escapeHtml(task.id)}</p>
+        <p><strong>任务名:</strong> ${escapeHtml(task.task_name)}</p>
+        <p><strong>描述:</strong> ${escapeHtml(task.description ? task.description : "暂无描述")}</p>
+        <p><strong>类型:</strong> ${escapeHtml(task.task_type)}</p>
+        <p><strong>状态:</strong> <span class="${getStatusBadgeClass(task.status)}">${escapeHtml(task.status || "-")}</span></p>
+        <p><strong>模板:</strong> ${escapeHtml(task.template_path || "-")}</p>
+        <p><strong>当前配置ID:</strong> ${escapeHtml(task.current_config_id || "-")}</p>
+        <p><strong>当前配置路径:</strong> ${escapeHtml(task.current_config ? task.current_config.yaml_path : "-")}</p>
     `;
 }
 
@@ -129,9 +129,7 @@ async function loadRuns() {
     if (!taskId) return;
 
     const { resp, result } = await requestJson(`/api/runs/task/${taskId}`, {
-        headers: {
-            "Authorization": "Bearer " + token3
-        }
+        method: "GET"
     });
 
     runList.innerHTML = "";
@@ -153,16 +151,16 @@ async function loadRuns() {
         div.className = "run-card clickable";
 
         div.innerHTML = `
-            <p><strong>运行ID:</strong> ${run.id}</p>
-            <p><strong>任务ID:</strong> ${run.task_id}</p>
-            <p><strong>运行名:</strong> ${run.run_name || "-"}</p>
-            <p><strong>状态:</strong> <span class="${getStatusBadgeClass(run.status)}">${run.status || "-"}</span></p>
-            <p><strong>运行类型:</strong> ${run.run_type || "-"}</p>
-            <p><strong>GPU模式:</strong> ${run.gpu_mode}</p>
-            <p><strong>GPU设备:</strong> ${run.gpu_devices || "-"}</p>
-            <p><strong>PID:</strong> ${run.pid || "-"}</p>
-            <p><strong>开始时间:</strong> ${run.started_at || "-"}</p>
-            <p><strong>结束时间:</strong> ${run.ended_at || "-"}</p>
+            <p><strong>运行ID:</strong> ${escapeHtml(run.id)}</p>
+            <p><strong>任务ID:</strong> ${escapeHtml(run.task_id)}</p>
+            <p><strong>运行名:</strong> ${escapeHtml(run.run_name || "-")}</p>
+            <p><strong>状态:</strong> <span class="${getStatusBadgeClass(run.status)}">${escapeHtml(run.status || "-")}</span></p>
+            <p><strong>运行类型:</strong> ${escapeHtml(run.run_type || "-")}</p>
+            <p><strong>GPU模式:</strong> ${escapeHtml(run.gpu_mode)}</p>
+            <p><strong>GPU设备:</strong> ${escapeHtml(run.gpu_devices || "-")}</p>
+            <p><strong>PID:</strong> ${escapeHtml(run.pid || "-")}</p>
+            <p><strong>开始时间:</strong> ${escapeHtml(run.started_at || "-")}</p>
+            <p><strong>结束时间:</strong> ${escapeHtml(run.ended_at || "-")}</p>
             ${formatMetricSummary(run.best_metric_max_json, run.best_metric_min_json)}
             <p><strong>说明:</strong> 点击进入该次运行的监控页面，可执行停止/恢复操作</p>
         `;
@@ -189,8 +187,7 @@ if (startRunBtn) {
         const { resp, result } = await requestJson("/api/runs", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token3
+                "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
         });
@@ -247,8 +244,7 @@ if (confirmDeleteTaskBtn) {
         const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
             method: "DELETE",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token3
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 password: password
@@ -266,6 +262,9 @@ if (confirmDeleteTaskBtn) {
 }
 
 (async function init() {
+    const ok = await requireLogin();
+    if (!ok) return;
+
     await loadTask();
     await loadRuns();
 })();

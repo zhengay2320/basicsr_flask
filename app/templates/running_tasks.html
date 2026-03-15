@@ -38,5 +38,6 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 <script src="{{ url_for('static', filename='js/running_tasks.js') }}"></script>
 {% endblock %}

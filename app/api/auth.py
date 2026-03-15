@@ -1,6 +1,16 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from datetime import datetime, timedelta, timezone
 
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt,
+    set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies,
+)
 from app.extensions import db
 from app.models.user import User
 
@@ -14,10 +24,20 @@ def json_error(code: int, message: str, http_status: int):
     }), http_status
 
 
+def build_user_data(user: User):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "theme": user.theme,
+        "status": user.status
+    }
+
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
-
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     email = (data.get("email") or "").strip()
@@ -55,20 +75,13 @@ def register():
     return jsonify({
         "code": 201,
         "message": "register success",
-        "data": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "role": user.role,
-            "theme": user.theme
-        }
+        "data": build_user_data(user)
     }), 201
 
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
-
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
 
@@ -83,22 +96,63 @@ def login():
         return json_error(403, "user is disabled", 403)
 
     access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
-    return jsonify({
+    resp = jsonify({
         "code": 200,
         "message": "login success",
         "data": {
-            "access_token": access_token,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "role": user.role,
-                "theme": user.theme,
-                "status": user.status
-            }
+            "user": build_user_data(user)
         }
     })
+
+    set_access_cookies(resp, access_token)
+    set_refresh_cookies(resp, refresh_token)
+    return resp
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        resp = jsonify({
+            "code": 404,
+            "message": "user not found"
+        })
+        unset_jwt_cookies(resp)
+        return resp, 404
+
+    if user.status != 1:
+        resp = jsonify({
+            "code": 403,
+            "message": "user is disabled"
+        })
+        unset_jwt_cookies(resp)
+        return resp, 403
+
+    new_access_token = create_access_token(identity=str(user.id))
+    resp = jsonify({
+        "code": 200,
+        "message": "refresh success",
+        "data": {
+            "user": build_user_data(user)
+        }
+    })
+    set_access_cookies(resp, new_access_token)
+    return resp
+
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    resp = jsonify({
+        "code": 200,
+        "message": "logout success"
+    })
+    unset_jwt_cookies(resp)
+    return resp
 
 
 @auth_bp.route("/me", methods=["GET"])
@@ -113,14 +167,7 @@ def me():
     return jsonify({
         "code": 200,
         "message": "ok",
-        "data": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "role": user.role,
-            "theme": user.theme,
-            "status": user.status
-        }
+        "data": build_user_data(user)
     })
 
 
@@ -135,8 +182,8 @@ def update_theme():
 
     data = request.get_json(silent=True) or {}
     theme = (data.get("theme") or "").strip()
-
     allow_themes = {"light", "dark", "green", "purple", "ocean"}
+
     if theme not in allow_themes:
         return json_error(400, "invalid theme", 400)
 
@@ -150,3 +197,30 @@ def update_theme():
             "theme": user.theme
         }
     })
+
+
+@auth_bp.after_app_request
+def refresh_expiring_jwts(response):
+    """
+    对“仍然有效但快过期”的 access token 自动续签，
+    让活跃用户几乎感知不到登录过期。
+    """
+    try:
+        jwt_data = get_jwt()
+        exp_timestamp = jwt_data.get("exp")
+        if not exp_timestamp:
+            return response
+
+        now = datetime.now(timezone.utc)
+        # 如果 access token 剩余不到 10 分钟，就自动续一个新的
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=10))
+
+        if target_timestamp > exp_timestamp:
+            identity = get_jwt_identity()
+            new_access_token = create_access_token(identity=identity)
+            set_access_cookies(response, new_access_token)
+
+        return response
+    except Exception:
+        # 没有 JWT 或不是受保护接口时，直接跳过
+        return response

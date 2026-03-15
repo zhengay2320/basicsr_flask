@@ -36,6 +36,7 @@ loginForm.addEventListener("submit", async function (e) {
   try {
     const response = await fetch("/api/auth/login", {
       method: "POST",
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json"
       },
@@ -49,10 +50,7 @@ loginForm.addEventListener("submit", async function (e) {
       return;
     }
 
-    const token = result.data.access_token;
     const user = result.data.user || {};
-
-    localStorage.setItem("access_token", token);
     localStorage.setItem("user_theme", user.theme || "dark");
 
     showResult("登录成功，正在进入控制台...", true);

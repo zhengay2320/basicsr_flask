@@ -1,9 +1,9 @@
-const token4 = localStorage.getItem("access_token");
-if (!token4) {
-    window.location.href = "/login";
-}
-
 const runId = window.__RUN_ID__;
+
+if (!runId) {
+    alert("缺少运行ID，无法进入监控页面。");
+    window.location.href = "/dashboard";
+}
 
 const statusBar = document.getElementById("statusBar");
 const tbPathBar = document.getElementById("tbPathBar");
@@ -51,6 +51,39 @@ function resizeAllCharts() {
     memChart.resize();
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function isActiveRunStatus(status) {
+    const s = String(status || "").toLowerCase();
+    return (
+        (
+            s.includes("running") ||
+            s.includes("pending") ||
+            s.includes("queued") ||
+            s.includes("resume") ||
+            s.includes("启动") ||
+            s.includes("运行") ||
+            s.includes("执行") ||
+            s.includes("恢复")
+        ) && !(
+            s.includes("success") ||
+            s.includes("failed") ||
+            s.includes("stopped") ||
+            s.includes("finished") ||
+            s.includes("completed") ||
+            s.includes("停止") ||
+            s.includes("失败") ||
+            s.includes("完成") ||
+            s.includes("结束")
+        )
+    );
+}
+
 function setStatusBar(run) {
     let text = `Run ID: ${run.id} | 状态: ${run.status} | PID: ${run.pid || "-"} | GPU: ${run.gpu_devices || "-"} | 开始时间: ${run.started_at || "-"}`;
 
@@ -75,6 +108,24 @@ function setStatusBar(run) {
     } else {
         statusBar.classList.add("status-pending");
     }
+
+    updateActionButtons();
+}
+
+function updateActionButtons() {
+    if (stopRunBtn) {
+        stopRunBtn.disabled = !isActiveRunStatus(latestRunStatus);
+    }
+
+    if (resumeRunBtn) {
+        const s = String(latestRunStatus || "").toLowerCase();
+        const canResume =
+            s.includes("stopped") ||
+            s.includes("failed") ||
+            s.includes("停止") ||
+            s.includes("失败");
+        resumeRunBtn.disabled = !canResume;
+    }
 }
 
 function renderBestWorst(bestMax, bestMin) {
@@ -97,9 +148,9 @@ function renderBestWorst(bestMax, bestMin) {
         const minVal = minMap[name] !== undefined ? minMap[name] : "-";
         return `
             <tr>
-                <td>${name}</td>
-                <td>${maxVal}</td>
-                <td>${minVal}</td>
+                <td>${escapeHtml(name)}</td>
+                <td>${escapeHtml(maxVal)}</td>
+                <td>${escapeHtml(minVal)}</td>
             </tr>
         `;
     }).join("");
@@ -122,13 +173,9 @@ function renderBestWorst(bestMax, bestMin) {
 }
 
 async function fetchRunDetail() {
-    const resp = await fetch(`/api/runs/${runId}`, {
-        headers: {
-            "Authorization": "Bearer " + token4
-        }
+    const { resp, result } = await apiFetch(`/api/runs/${runId}`, {
+        method: "GET"
     });
-
-    const result = await resp.json();
 
     if (!resp.ok) {
         statusBar.innerText = result.message || "运行信息加载失败";
@@ -142,15 +189,12 @@ async function fetchRunDetail() {
 }
 
 async function fetchLog() {
-    const logType = logTypeEl.value;
+    const logType = logTypeEl ? logTypeEl.value : "train";
 
-    const resp = await fetch(`/api/runs/${runId}/log?log_type=${encodeURIComponent(logType)}&max_lines=400`, {
-        headers: {
-            "Authorization": "Bearer " + token4
-        }
-    });
-
-    const result = await resp.json();
+    const { resp, result } = await apiFetch(
+        `/api/runs/${runId}/log?log_type=${encodeURIComponent(logType)}&max_lines=400`,
+        { method: "GET" }
+    );
 
     if (!resp.ok) {
         logWindow.textContent = result.message || "日志读取失败";
@@ -186,13 +230,9 @@ function splitScalars(scalars) {
 }
 
 async function fetchScalars() {
-    const resp = await fetch(`/api/runs/${runId}/tb-scalars`, {
-        headers: {
-            "Authorization": "Bearer " + token4
-        }
+    const { resp, result } = await apiFetch(`/api/runs/${runId}/tb-scalars`, {
+        method: "GET"
     });
-
-    const result = await resp.json();
 
     if (!resp.ok) {
         if (tbPathBar) {
@@ -282,17 +322,13 @@ function renderHardwareCharts() {
 }
 
 async function fetchHardware() {
-    const resp = await fetch(`/api/runs/${runId}/hardware`, {
-        headers: {
-            "Authorization": "Bearer " + token4
-        }
+    const { resp, result } = await apiFetch(`/api/runs/${runId}/hardware`, {
+        method: "GET"
     });
-
-    const result = await resp.json();
 
     if (!resp.ok) {
         if (systemStats) {
-            systemStats.innerHTML = `<p>硬件信息读取失败：${result.message || "unknown error"}</p>`;
+            systemStats.innerHTML = `<p>硬件信息读取失败：${escapeHtml(result.message || "unknown error")}</p>`;
         }
         if (gpuStats) {
             gpuStats.innerHTML = "<p>GPU 信息读取失败</p>";
@@ -317,7 +353,7 @@ async function fetchHardware() {
     if (system.ok === false) {
         systemStats.innerHTML = `
             <p><strong>系统信息读取失败</strong></p>
-            <p>${system.error || "未知错误"}</p>
+            <p>${escapeHtml(system.error || "未知错误")}</p>
         `;
     } else {
         if ((system.cpu_percent ?? 0) > 90) {
@@ -325,35 +361,35 @@ async function fetchHardware() {
         }
 
         systemStats.innerHTML = `
-            <p><strong>CPU 使用率：</strong>${system.cpu_percent ?? "-"}%</p>
-            <p><strong>内存使用率：</strong>${system.memory_percent ?? "-"}%</p>
-            <p><strong>已用内存：</strong>${system.memory_used_gb ?? "-"} GB / ${system.memory_total_gb ?? "-"} GB</p>
-            <p><strong>可用内存：</strong>${system.memory_available_gb ?? "-"} GB</p>
-            <p><strong>磁盘使用率：</strong>${system.disk_percent ?? "-"}%</p>
-            <p><strong>磁盘根目录：</strong>${system.disk_root ?? "-"}</p>
-            <p><strong>平台：</strong>${system.platform ?? "-"}</p>
+            <p><strong>CPU 使用率：</strong>${escapeHtml(system.cpu_percent ?? "-")}%</p>
+            <p><strong>内存使用率：</strong>${escapeHtml(system.memory_percent ?? "-")}%</p>
+            <p><strong>已用内存：</strong>${escapeHtml(system.memory_used_gb ?? "-")} GB / ${escapeHtml(system.memory_total_gb ?? "-")} GB</p>
+            <p><strong>可用内存：</strong>${escapeHtml(system.memory_available_gb ?? "-")} GB</p>
+            <p><strong>磁盘使用率：</strong>${escapeHtml(system.disk_percent ?? "-")}%</p>
+            <p><strong>磁盘根目录：</strong>${escapeHtml(system.disk_root ?? "-")}</p>
+            <p><strong>平台：</strong>${escapeHtml(system.platform ?? "-")}</p>
         `;
     }
 
     if (!snapshot.gpu_ok) {
         gpuStats.innerHTML = `
             <p><strong>GPU 信息不可用</strong></p>
-            <p>后端：${gpuMeta.backend || "-"}</p>
+            <p>后端：${escapeHtml(gpuMeta.backend || "-")}</p>
             <p>NVML 可导入：${gpuMeta.nvml_available ? "是" : "否"}</p>
             <p>NVML 已初始化：${gpuMeta.nvml_ready ? "是" : "否"}</p>
-            <p>NVML 错误：${gpuMeta.nvml_error || "-"}</p>
+            <p>NVML 错误：${escapeHtml(gpuMeta.nvml_error || "-")}</p>
             <p>nvidia-smi 可用：${gpuMeta.nvidia_smi_found ? "是" : "否"}</p>
-            <p>请求 GPU：${gpuMeta.requested_gpu_devices || "-"}</p>
-            <p>解析后索引：${JSON.stringify(gpuMeta.parsed_gpu_indices || [])}</p>
-            <p>实际采样索引：${JSON.stringify(gpuMeta.effective_gpu_indices || [])}</p>
+            <p>请求 GPU：${escapeHtml(gpuMeta.requested_gpu_devices || "-")}</p>
+            <p>解析后索引：${escapeHtml(JSON.stringify(gpuMeta.parsed_gpu_indices || []))}</p>
+            <p>实际采样索引：${escapeHtml(JSON.stringify(gpuMeta.effective_gpu_indices || []))}</p>
         `;
     } else if (gpus.length === 0) {
         gpuStats.innerHTML = `
             <p>当前没有可显示的 GPU 数据。</p>
-            <p>后端：${gpuMeta.backend || "-"}</p>
-            <p>请求 GPU：${gpuMeta.requested_gpu_devices || "-"}</p>
-            <p>解析后索引：${JSON.stringify(gpuMeta.parsed_gpu_indices || [])}</p>
-            <p>实际采样索引：${JSON.stringify(gpuMeta.effective_gpu_indices || [])}</p>
+            <p>后端：${escapeHtml(gpuMeta.backend || "-")}</p>
+            <p>请求 GPU：${escapeHtml(gpuMeta.requested_gpu_devices || "-")}</p>
+            <p>解析后索引：${escapeHtml(JSON.stringify(gpuMeta.parsed_gpu_indices || []))}</p>
+            <p>实际采样索引：${escapeHtml(JSON.stringify(gpuMeta.effective_gpu_indices || []))}</p>
         `;
     } else {
         gpuStats.innerHTML = gpus.map(gpu => {
@@ -367,20 +403,20 @@ async function fetchHardware() {
             if (gpu.error) {
                 return `
                     <div class="gpu-item">
-                        <p><strong>GPU ${gpu.gpu_index}</strong></p>
-                        <p>读取失败：${gpu.error}</p>
+                        <p><strong>GPU ${escapeHtml(gpu.gpu_index)}</strong></p>
+                        <p>读取失败：${escapeHtml(gpu.error)}</p>
                     </div>
                 `;
             }
 
             return `
                 <div class="gpu-item">
-                    <p><strong>GPU ${gpu.gpu_index}</strong> - ${gpu.gpu_name}</p>
-                    <p>利用率：${gpu.util_percent}%</p>
-                    <p>显存：${gpu.mem_used_mb} MB / ${gpu.mem_total_mb} MB (${gpu.mem_percent}%)</p>
-                    <p>温度：${gpu.temperature ?? "-"} ℃</p>
-                    <p>功耗：${gpu.power_w ?? "-"} W</p>
-                    <p>风扇：${gpu.fan_speed ?? "-"}%</p>
+                    <p><strong>GPU ${escapeHtml(gpu.gpu_index)}</strong> - ${escapeHtml(gpu.gpu_name)}</p>
+                    <p>利用率：${escapeHtml(gpu.util_percent)}%</p>
+                    <p>显存：${escapeHtml(gpu.mem_used_mb)} MB / ${escapeHtml(gpu.mem_total_mb)} MB (${escapeHtml(gpu.mem_percent)}%)</p>
+                    <p>温度：${escapeHtml(gpu.temperature ?? "-")} ℃</p>
+                    <p>功耗：${escapeHtml(gpu.power_w ?? "-")} W</p>
+                    <p>风扇：${escapeHtml(gpu.fan_speed ?? "-")}%</p>
                 </div>
             `;
         }).join("");
@@ -406,7 +442,7 @@ async function fetchHardware() {
         systemStats.innerHTML += `
             <div class="msg-box">
                 <strong>训练健康提示：</strong><br>
-                ${hints.map(h => `- ${h}`).join("<br>")}
+                ${hints.map(h => `- ${escapeHtml(h)}`).join("<br>")}
             </div>
         `;
     }
@@ -439,15 +475,6 @@ async function refreshAll() {
     await fetchHardware();
 }
 
-refreshAll();
-
-setInterval(async () => {
-    await fetchRunDetail();
-    await fetchLog();
-    await fetchScalars();
-    await fetchHardware();
-}, 5000);
-
 window.addEventListener("resize", () => {
     resizeAllCharts();
 });
@@ -457,14 +484,10 @@ if (stopRunBtn) {
         const ok = confirm("确认停止当前运行吗？");
         if (!ok) return;
 
-        const resp = await fetch(`/api/run-control/${runId}/stop`, {
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer " + token4
-            }
+        const { resp, result } = await apiFetch(`/api/run-control/${runId}/stop`, {
+            method: "POST"
         });
 
-        const result = await resp.json();
         if (!resp.ok) {
             alert(result.message || "停止失败");
             return;
@@ -480,18 +503,16 @@ if (resumeRunBtn) {
         const ok = confirm("确认从当前这条运行恢复训练吗？系统将优先寻找最大的 .state 文件，若未找到则自动使用 --auto_resume。");
         if (!ok) return;
 
-        const resp = await fetch(`/api/run-control/run/${runId}/resume`, {
+        const { resp, result } = await apiFetch(`/api/run-control/run/${runId}/resume`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token4
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 gpu_mode: "single"
             })
         });
 
-        const result = await resp.json();
         if (!resp.ok) {
             alert(result.message || "恢复失败");
             return;
@@ -501,3 +522,15 @@ if (resumeRunBtn) {
         window.location.href = `/runs/${result.data.run_id}/monitor`;
     });
 }
+
+(async function init() {
+    const ok = await requireLogin();
+    if (!ok) return;
+
+    await refreshAll();
+
+    setInterval(async () => {
+        if (document.hidden) return;
+        await refreshAll();
+    }, 5000);
+})();
