@@ -1,6 +1,7 @@
 
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.models.task import Task
 from app.models.task_run import TaskRun
@@ -29,9 +30,9 @@ def get_run_service():
 
 
 @run_api_bp.route("", methods=["POST"])
-@jwt_required()
+@login_required
 def create_run():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
     data = request.get_json(silent=True) or {}
 
     task_id = data.get("task_id")
@@ -94,9 +95,10 @@ def create_run():
 
 
 @run_api_bp.route("/task/<int:task_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def list_runs_by_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     runs = TaskRun.query.filter_by(task_id=task_id, user_id=user_id).order_by(TaskRun.created_at.desc()).all()
 
     data = []
@@ -116,9 +118,10 @@ def list_runs_by_task(task_id):
 
 
 @run_api_bp.route("/<int:run_id>/events", methods=["GET"])
-@jwt_required()
+@login_required
 def run_events(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
     if not run:
@@ -161,9 +164,10 @@ def get_monitor_service():
 
 
 @run_api_bp.route("", methods=["POST"])
-@jwt_required()
+@login_required
 def create_run():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     task_id = data.get("task_id")
@@ -226,9 +230,10 @@ def create_run():
 
 
 @run_api_bp.route("/task/<int:task_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def list_runs_by_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     runs = TaskRun.query.filter(
         TaskRun.task_id == task_id,
@@ -257,9 +262,10 @@ def list_runs_by_task(task_id):
 
 
 @run_api_bp.route("/<int:run_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def get_run_detail(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     monitor_service = get_monitor_service()
 
     try:
@@ -299,9 +305,10 @@ def get_run_detail(run_id):
 
 
 @run_api_bp.route("/<int:run_id>/refresh-status", methods=["POST"])
-@jwt_required()
+@login_required
 def refresh_run_status(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     monitor_service = get_monitor_service()
 
     try:
@@ -323,9 +330,10 @@ def refresh_run_status(run_id):
 
 
 @run_api_bp.route("/<int:run_id>/log", methods=["GET"])
-@jwt_required()
+@login_required
 def get_run_log(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     log_type = request.args.get("log_type", "stdout")
     max_lines = request.args.get("max_lines", default=300, type=int)
 
@@ -347,9 +355,10 @@ def get_run_log(run_id):
     })
 
 @run_api_bp.route("/<int:run_id>/tb-scalars", methods=["GET"])
-@jwt_required()
+@login_required
 def get_tb_scalars(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     monitor_service = get_monitor_service()
 
     try:
@@ -375,9 +384,10 @@ def get_tb_scalars(run_id):
 
 
 @run_api_bp.route("/<int:run_id>/events", methods=["GET"])
-@jwt_required()
+@login_required
 def run_events(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
     if not run:
@@ -402,9 +412,11 @@ def get_hardware_service():
     return HardwareMonitorService()
 
 @run_api_bp.route("/<int:run_id>/hardware", methods=["GET"])
-@jwt_required()
+@login_required
 def get_run_hardware(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
+
 
     run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
     if not run:

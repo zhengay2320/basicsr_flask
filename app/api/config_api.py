@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
+
 import yaml
 
 from app.services.config_service import ConfigService
@@ -15,7 +17,7 @@ def get_config_service():
 
 
 @config_api_bp.route("/task/<int:task_id>/current", methods=["GET"])
-@jwt_required()
+@login_required
 def get_current_task_config(task_id):
     user_id = int(get_jwt_identity())
     service = get_config_service()
@@ -44,7 +46,7 @@ def get_current_task_config(task_id):
 
 
 @config_api_bp.route("/task/<int:task_id>/versions", methods=["GET"])
-@jwt_required()
+@login_required
 def list_task_config_versions(task_id):
     user_id = int(get_jwt_identity())
     service = get_config_service()
@@ -74,7 +76,7 @@ def list_task_config_versions(task_id):
 
 
 @config_api_bp.route("/task/<int:task_id>/save-version", methods=["POST"])
-@jwt_required()
+@login_required
 def save_new_task_config_version(task_id):
     user_id = int(get_jwt_identity())
     service = get_config_service()
@@ -110,9 +112,10 @@ def save_new_task_config_version(task_id):
 
 
 @config_api_bp.route("/task/<int:task_id>/rollback", methods=["POST"])
-@jwt_required()
+@login_required
 def rollback_task_config(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     service = get_config_service()
     data = request.get_json(silent=True) or {}
 

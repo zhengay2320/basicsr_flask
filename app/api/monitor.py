@@ -2,7 +2,8 @@ import os
 import platform
 
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask_login import login_required, current_user
+
 
 monitor_bp = Blueprint("monitor", __name__)
 
@@ -20,7 +21,7 @@ def health():
 
 
 @monitor_bp.route("/system", methods=["GET"])
-@jwt_required()
+@login_required
 def system_info():
     return jsonify({
         "code": 200,
@@ -36,7 +37,7 @@ def system_info():
 
 
 @monitor_bp.route("/gpus", methods=["GET"])
-@jwt_required()
+@login_required
 def gpu_info():
     # 这里先返回占位数据，后面可替换为 pynvml 真实采集
     return jsonify({

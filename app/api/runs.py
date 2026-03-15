@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.models.task import Task
@@ -9,9 +10,10 @@ run_bp = Blueprint("runs", __name__)
 
 
 @run_bp.route("", methods=["POST"])
-@jwt_required()
+@login_required
 def create_run():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     task_id = data.get("task_id")
@@ -81,9 +83,10 @@ def create_run():
 
 
 @run_bp.route("", methods=["GET"])
-@jwt_required()
+@login_required
 def list_runs():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     query = TaskRun.query.filter_by(user_id=user_id)
 
@@ -105,9 +108,10 @@ def list_runs():
 
 
 @run_bp.route("/<int:run_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def get_run(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     run = TaskRun.query.filter_by(
         id=run_id,
@@ -128,9 +132,10 @@ def get_run(run_id):
 
 
 @run_bp.route("/<int:run_id>/stop", methods=["POST"])
-@jwt_required()
+@login_required
 def stop_run(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     run = TaskRun.query.filter_by(
         id=run_id,

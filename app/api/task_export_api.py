@@ -2,7 +2,8 @@ import csv
 import io
 import math
 from flask import Blueprint, current_app, jsonify, Response
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.models.task import Task
 from app.models.task_run import TaskRun
@@ -25,9 +26,10 @@ def safe_variance(values):
 
 
 @task_export_api_bp.route("/task/<int:task_id>/results.csv", methods=["GET"])
-@jwt_required()
+@login_required
 def export_task_results_csv(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     task = Task.query.filter_by(id=task_id, user_id=user_id, is_deleted=False).first()
     if not task:

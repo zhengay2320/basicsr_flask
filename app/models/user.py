@@ -1,9 +1,9 @@
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 from app.extensions import db
 from app.models.base import BaseModel
 
-
-class User(BaseModel):
+class User(UserMixin, BaseModel):
     __tablename__ = "sys_user"
 
     username = db.Column(db.String(64), nullable=False, unique=True, index=True)
@@ -22,3 +22,7 @@ class User(BaseModel):
 
     def check_password(self, raw_password: str) -> bool:
         return check_password_hash(self.password_hash, raw_password)
+
+    @property
+    def is_active(self):
+        return self.status == 1

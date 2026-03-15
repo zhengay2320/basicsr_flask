@@ -1,9 +1,5 @@
 const APP_THEME_KEY = "user_theme";
 
-function getToken() {
-  return localStorage.getItem("access_token") || "";
-}
-
 function safeText(value, fallback = "-") {
   return value === null || value === undefined || value === "" ? fallback : value;
 }
@@ -36,22 +32,38 @@ function fillUserCard(user) {
   if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 }
 
-async function fetchCurrentUser() {
-  const token = getToken();
-  if (!token) return null;
+async function apiFetch(url, options = {}) {
+  const finalOptions = {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.headers || {})
+    }
+  };
 
+  const resp = await fetch(url, finalOptions);
+  let result = {};
   try {
-    const response = await fetch("/api/auth/me", {
-      method: "GET",
-      headers: {
-        "Authorization": "Bearer " + token
-      }
+    result = await resp.json();
+  } catch (e) {
+    result = {};
+  }
+
+  if (resp.status === 401) {
+    window.location.href = "/login";
+    return { resp, result };
+  }
+
+  return { resp, result };
+}
+
+async function fetchCurrentUser() {
+  try {
+    const { resp, result } = await apiFetch("/api/auth/me", {
+      method: "GET"
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error(result.message || "load current user failed");
+    if (!resp.ok) {
       return null;
     }
 
@@ -65,24 +77,28 @@ async function fetchCurrentUser() {
   }
 }
 
+async function requireLogin() {
+  const user = await fetchCurrentUser();
+  if (!user) {
+    window.location.href = "/login";
+    return false;
+  }
+  return true;
+}
+
 async function updateTheme(theme) {
   applyTheme(theme);
 
-  const token = getToken();
-  if (!token) return;
-
   try {
-    const response = await fetch("/api/auth/theme", {
+    const { resp, result } = await apiFetch("/api/auth/theme", {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({ theme })
     });
 
-    const result = await response.json();
-    if (!response.ok) {
+    if (!resp.ok) {
       console.error(result.message || "theme update failed");
     }
   } catch (error) {
@@ -90,13 +106,22 @@ async function updateTheme(theme) {
   }
 }
 
+async function logoutAndRedirect() {
+  try {
+    await apiFetch("/api/auth/logout", {
+      method: "POST"
+    });
+  } finally {
+    window.location.href = "/login";
+  }
+}
+
 function bindLogout() {
   const logoutBtn = document.getElementById("logoutBtn");
   if (!logoutBtn) return;
 
-  logoutBtn.addEventListener("click", function () {
-    localStorage.removeItem("access_token");
-    window.location.href = "/login";
+  logoutBtn.addEventListener("click", async function () {
+    await logoutAndRedirect();
   });
 }
 
@@ -114,7 +139,6 @@ function bindThemeCycle() {
   if (!themeCycleBtn) return;
 
   const themes = ["light", "dark", "green", "purple", "ocean"];
-
   themeCycleBtn.addEventListener("click", function () {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const currentIndex = themes.indexOf(current);

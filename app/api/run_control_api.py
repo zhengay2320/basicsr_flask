@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.services.run_control_service import RunControlService
 
@@ -19,9 +20,10 @@ def get_run_control_service():
 
 
 @run_control_api_bp.route("/<int:run_id>/stop", methods=["POST"])
-@jwt_required()
+@login_required
 def stop_run(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     service = get_run_control_service()
 
     try:
@@ -40,7 +42,7 @@ def stop_run(run_id):
 
 
 @run_control_api_bp.route("/run/<int:run_id>/resume", methods=["POST"])
-@jwt_required()
+@login_required
 def resume_run(run_id):
     user_id = int(get_jwt_identity())
     service = get_run_control_service()

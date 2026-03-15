@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.models.task import Task
@@ -8,9 +9,10 @@ task_bp = Blueprint("tasks", __name__)
 
 
 @task_bp.route("", methods=["POST"])
-@jwt_required()
+@login_required
 def create_task():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     task_name = (data.get("task_name") or "").strip()
@@ -59,9 +61,10 @@ def create_task():
 
 
 @task_bp.route("", methods=["GET"])
-@jwt_required()
+@login_required
 def list_tasks():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     query = Task.query.filter_by(user_id=user_id, is_deleted=False)
 
@@ -83,9 +86,10 @@ def list_tasks():
 
 
 @task_bp.route("/<int:task_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def get_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     task = Task.query.filter_by(
         id=task_id,
@@ -107,9 +111,10 @@ def get_task(task_id):
 
 
 @task_bp.route("/<int:task_id>", methods=["PUT"])
-@jwt_required()
+@login_required
 def update_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     task = Task.query.filter_by(
@@ -158,9 +163,10 @@ def update_task(task_id):
 
 
 @task_bp.route("/<int:task_id>", methods=["DELETE"])
-@jwt_required()
+@login_required
 def delete_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     task = Task.query.filter_by(
         id=task_id,

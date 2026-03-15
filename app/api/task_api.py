@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.models.task import Task
@@ -18,9 +19,10 @@ def get_task_service():
 
 
 @task_api_bp.route("", methods=["GET"])
-@jwt_required()
+@login_required
 def list_tasks():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     tasks = Task.query.filter(
         Task.user_id == user_id,
@@ -44,7 +46,7 @@ def list_tasks():
 
 
 @task_api_bp.route("/templates", methods=["GET"])
-@jwt_required()
+@login_required
 def list_templates():
     scene_type = request.args.get("scene_type")
     service = get_task_service()
@@ -53,7 +55,7 @@ def list_templates():
 
 
 @task_api_bp.route("/modules", methods=["GET"])
-@jwt_required()
+@login_required
 def list_modules():
     service = get_task_service()
     try:
@@ -67,7 +69,7 @@ def list_modules():
 
 
 @task_api_bp.route("/template-detail", methods=["GET"])
-@jwt_required()
+@login_required
 def template_detail():
     relative_path = request.args.get("relative_path", "").strip()
     if not relative_path:
@@ -79,7 +81,7 @@ def template_detail():
 
 
 @task_api_bp.route("/template-section", methods=["GET"])
-@jwt_required()
+@login_required
 def template_section():
     relative_path = request.args.get("relative_path", "").strip()
     section_path = request.args.get("section_path", "").strip()
@@ -95,9 +97,10 @@ def template_section():
 
 
 @task_api_bp.route("", methods=["POST"])
-@jwt_required()
+@login_required
 def create_task():
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     task_name = (data.get("task_name") or "").strip()
@@ -144,9 +147,10 @@ def create_task():
 
 
 @task_api_bp.route("/<int:task_id>", methods=["GET"])
-@jwt_required()
+@login_required
 def get_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
 
     task = Task.query.filter(
         Task.id == task_id,
@@ -183,9 +187,10 @@ def get_task(task_id):
 
 
 @task_api_bp.route("/<int:task_id>", methods=["DELETE"])
-@jwt_required()
+@login_required
 def delete_task(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
+
     data = request.get_json(silent=True) or {}
 
     password = data.get("password") or ""

@@ -57,7 +57,7 @@ loginForm.addEventListener("submit", async function (e) {
 
     setTimeout(function () {
       window.location.href = "/dashboard";
-    }, 600);
+    }, 400);
   } catch (error) {
     console.error(error);
     showResult("网络异常，请稍后重试", false);
