@@ -4,7 +4,7 @@ from app.models.base import BaseModel
 
 class TaskConfig(BaseModel):
     __tablename__ = "task_config"
-    id = db.Column(db.Integer, primary_key=True)
+    # id = db.Column(db.Integer, primary_key=True)
 
     task_id = db.Column(
         db.BigInteger,

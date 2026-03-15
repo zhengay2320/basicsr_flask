@@ -22,6 +22,11 @@ class TaskRun(BaseModel):
         db.ForeignKey("task_config.id", ondelete="RESTRICT"),
         nullable=False
     )
+    # config_id = db.Column(
+    #     db.Integer,
+    #     db.ForeignKey("task_config.id", ondelete="RESTRICT"),
+    #     nullable=False
+    # )
 
     run_name = db.Column(db.String(128), nullable=True)
     run_type = db.Column(db.String(32), nullable=False)  # train / test / resume

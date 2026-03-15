@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@192.168.210.235:6017" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
+      <paths name="ubuntu@192.168.210.235:6017">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ubuntu/data/zhenganyang/web" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="ubuntu@192.168.210.235:6017 agent">
         <serverdata>
           <mappings>
@@ -80,5 +87,6 @@
         </serverdata>
       </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
