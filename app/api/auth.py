@@ -1,15 +1,19 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_jwt_extended import unset_jwt_cookies
+
 from app.extensions import db
 from app.models.user import User
 
 auth_bp = Blueprint("auth", __name__)
+
 
 def json_error(code: int, message: str, http_status: int):
     return jsonify({
         "code": code,
         "message": message
     }), http_status
+
 
 def build_user_data(user: User):
     return {
@@ -21,9 +25,11 @@ def build_user_data(user: User):
         "status": user.status
     }
 
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
+
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     email = (data.get("email") or "").strip()
@@ -62,9 +68,11 @@ def register():
         "data": build_user_data(user)
     }), 201
 
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
+
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
 
@@ -89,15 +97,43 @@ def login():
         }
     })
 
+
 @auth_bp.route("/logout", methods=["POST"])
-@login_required
 def logout():
-    logout_user()
-    session.clear()
-    return jsonify({
+    try:
+        logout_user()
+    except Exception:
+        pass
+
+    try:
+        session.clear()
+    except Exception:
+        pass
+
+    resp = jsonify({
         "code": 200,
         "message": "logout success"
     })
+
+    # 清 Flask session cookie
+    session_cookie_name = current_app.config.get("SESSION_COOKIE_NAME", "session")
+    resp.delete_cookie(session_cookie_name, path="/")
+
+    # 清 Flask-Login remember cookie
+    resp.delete_cookie("remember_token", path="/")
+
+    # 清 JWT cookies（兼容你项目里历史残留的 JWT 登录）
+    try:
+        unset_jwt_cookies(resp)
+    except Exception:
+        pass
+
+    # 再兜底删除一轮常见 JWT cookie 名
+    resp.delete_cookie("access_token_cookie", path="/")
+    resp.delete_cookie("refresh_token_cookie", path="/")
+
+    return resp
+
 
 @auth_bp.route("/me", methods=["GET"])
 @login_required
@@ -108,13 +144,14 @@ def me():
         "data": build_user_data(current_user)
     })
 
+
 @auth_bp.route("/theme", methods=["PUT"])
 @login_required
 def update_theme():
     data = request.get_json(silent=True) or {}
     theme = (data.get("theme") or "").strip()
-    allow_themes = {"light", "dark", "green", "purple", "ocean"}
 
+    allow_themes = {"light", "dark", "green", "purple", "ocean"}
     if theme not in allow_themes:
         return json_error(400, "invalid theme", 400)
 

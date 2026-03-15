@@ -118,9 +118,9 @@ train:
     reduction: mean
 
 # Uncomment these for validation
-validation settings
+# validation settings
 val:
-  val_freq: !!float 1e3
+  val_freq: !!float 3e2
   save_img: True
 
   metrics:
