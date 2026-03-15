@@ -19,7 +19,7 @@ def get_config_service():
 @config_api_bp.route("/task/<int:task_id>/current", methods=["GET"])
 @login_required
 def get_current_task_config(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
     service = get_config_service()
 
     try:
@@ -48,7 +48,7 @@ def get_current_task_config(task_id):
 @config_api_bp.route("/task/<int:task_id>/versions", methods=["GET"])
 @login_required
 def list_task_config_versions(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
     service = get_config_service()
 
     try:
@@ -78,7 +78,7 @@ def list_task_config_versions(task_id):
 @config_api_bp.route("/task/<int:task_id>/save-version", methods=["POST"])
 @login_required
 def save_new_task_config_version(task_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
     service = get_config_service()
     data = request.get_json(silent=True) or {}
 

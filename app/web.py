@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
 web_bp = Blueprint("web", __name__)
@@ -6,19 +6,19 @@ web_bp = Blueprint("web", __name__)
 @web_bp.route("/")
 def index():
     if current_user.is_authenticated:
-        return render_template("dashboard.html")
-    return render_template("login.html")
+        return redirect(url_for("web.dashboard_page"))
+    return redirect(url_for("web.login_page"))
 
 @web_bp.route("/login")
 def login_page():
     if current_user.is_authenticated:
-        return render_template("dashboard.html")
+        return redirect(url_for("web.dashboard_page"))
     return render_template("login.html")
 
 @web_bp.route("/register")
 def register_page():
     if current_user.is_authenticated:
-        return render_template("dashboard.html")
+        return redirect(url_for("web.dashboard_page"))
     return render_template("register.html")
 
 @web_bp.route("/dashboard")

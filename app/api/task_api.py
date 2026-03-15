@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app
 # from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.task import Task
@@ -17,16 +18,14 @@ def get_task_service():
     storage_root = current_app.config["STORAGE_ROOT"]
     return TaskService(basicsr_root=basicsr_root, storage_root=storage_root)
 
-
 @task_api_bp.route("", methods=["GET"])
 @login_required
 def list_tasks():
     user_id = int(current_user.id)
 
-
     tasks = Task.query.filter(
         Task.user_id == user_id,
-        Task.is_deleted == False
+        or_(Task.is_deleted.is_(False), Task.is_deleted.is_(None))
     ).order_by(Task.created_at.desc()).all()
 
     result = []
@@ -43,6 +42,7 @@ def list_tasks():
         })
 
     return jsonify({"code": 200, "message": "ok", "data": result})
+
 
 
 @task_api_bp.route("/templates", methods=["GET"])

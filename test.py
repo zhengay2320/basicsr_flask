@@ -130,7 +130,8 @@ val:
       test_y_channel: false
 
     ssim:
-      type: caculate_ssim
+      type: calculate_ssim
+
       crop_border: 4
       test_y_channel: false
 

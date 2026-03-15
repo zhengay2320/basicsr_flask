@@ -109,10 +109,17 @@ async function updateTheme(theme) {
 
 async function logoutAndRedirect() {
   try {
-    await apiFetch("/api/auth/logout", {
+    const { resp, result } = await apiFetch("/api/auth/logout", {
       method: "POST"
     });
+
+    if (!resp.ok) {
+      console.error(result.message || "logout failed");
+    }
+  } catch (error) {
+    console.error("logout failed:", error);
   } finally {
+    localStorage.removeItem("access_token");
     window.location.href = "/login";
   }
 }
