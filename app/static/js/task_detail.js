@@ -176,30 +176,38 @@ async function loadRuns() {
 if (startRunBtn) {
     startRunBtn.addEventListener("click", async () => {
         runMsg.innerText = "";
+        startRunBtn.disabled = true;
 
-        const payload = {
-            task_id: taskId,
-            run_name: document.getElementById("runName").value.trim(),
-            gpu_mode: document.getElementById("gpuMode").value,
-            gpu_devices: document.getElementById("gpuDevices").value.trim()
-        };
+        try {
+            const payload = {
+                task_id: taskId,
+                run_name: document.getElementById("runName").value.trim(),
+                gpu_mode: document.getElementById("gpuMode").value,
+                gpu_devices: document.getElementById("gpuDevices").value.trim()
+            };
 
-        const { resp, result } = await requestJson("/api/runs", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
+            const { resp, result } = await requestJson("/api/runs", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
 
-        if (!resp.ok) {
-            runMsg.innerText = result.message || "启动失败";
-            return;
+            if (!resp.ok) {
+                runMsg.innerText = result.message || "启动失败";
+                return;
+            }
+
+            runMsg.innerText = `任务已启动，run_id=${result.data.run_id}`;
+            await loadTask();
+            await loadRuns();
+        } catch (err) {
+            console.error(err);
+            runMsg.innerText = "启动失败，请稍后重试";
+        } finally {
+            startRunBtn.disabled = false;
         }
-
-        runMsg.innerText = `任务已启动，run_id=${result.data.run_id}`;
-        await loadTask();
-        await loadRuns();
     });
 }
 
@@ -210,8 +218,23 @@ if (viewConfigBtn) {
 }
 
 if (exportTaskBtn) {
-    exportTaskBtn.addEventListener("click", () => {
-        window.location.href = `/api/export/task/${taskId}/results.csv`;
+    exportTaskBtn.addEventListener("click", async () => {
+        try {
+            const { resp } = await requestJson("/api/auth/me", {
+                method: "GET"
+            });
+
+            if (!resp.ok) {
+                alert("当前登录状态已失效，请重新登录");
+                window.location.href = "/login";
+                return;
+            }
+
+            window.location.href = `/api/export/task/${taskId}/results.csv`;
+        } catch (err) {
+            console.error(err);
+            alert("导出失败，请稍后重试");
+        }
     });
 }
 
@@ -241,23 +264,33 @@ if (confirmDeleteTaskBtn) {
             return;
         }
 
-        const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                password: password
-            })
-        });
+        confirmDeleteTaskBtn.disabled = true;
+        deleteTaskMsg.innerText = "";
 
-        if (!resp.ok) {
-            deleteTaskMsg.innerText = result.message || "删除失败";
-            return;
+        try {
+            const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    password: password
+                })
+            });
+
+            if (!resp.ok) {
+                deleteTaskMsg.innerText = result.message || "删除失败";
+                return;
+            }
+
+            deleteTaskModal.style.display = "none";
+            window.location.href = "/dashboard";
+        } catch (err) {
+            console.error(err);
+            deleteTaskMsg.innerText = "删除失败，请稍后重试";
+        } finally {
+            confirmDeleteTaskBtn.disabled = false;
         }
-
-        deleteTaskModal.style.display = "none";
-        window.location.href = "/dashboard";
     });
 }
 

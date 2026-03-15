@@ -201,10 +201,6 @@ def update_theme():
 
 @auth_bp.after_app_request
 def refresh_expiring_jwts(response):
-    """
-    对“仍然有效但快过期”的 access token 自动续签，
-    让活跃用户几乎感知不到登录过期。
-    """
     try:
         jwt_data = get_jwt()
         exp_timestamp = jwt_data.get("exp")
@@ -212,7 +208,6 @@ def refresh_expiring_jwts(response):
             return response
 
         now = datetime.now(timezone.utc)
-        # 如果 access token 剩余不到 10 分钟，就自动续一个新的
         target_timestamp = datetime.timestamp(now + timedelta(minutes=10))
 
         if target_timestamp > exp_timestamp:
@@ -222,5 +217,4 @@ def refresh_expiring_jwts(response):
 
         return response
     except Exception:
-        # 没有 JWT 或不是受保护接口时，直接跳过
         return response

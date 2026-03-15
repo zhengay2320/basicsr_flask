@@ -17,36 +17,29 @@ class DefaultConfig:
     # BasicSR 项目根目录
     BASICSR_ROOT = os.getenv("BASICSR_ROOT", r"/home/ubuntu/data/zhenganyang/myMLPro")
 
-    # 平台存配置、日志、run 目录的根目录
+    # 平台自己存配置、日志、run 目录的根目录
     STORAGE_ROOT = os.getenv("STORAGE_ROOT", r"/home/ubuntu/data/zhenganyang/myMLPro/storage")
 
     # Python 解释器
     PYTHON_EXEC = os.getenv("PYTHON_EXEC", r"/home/ubuntu/data/miniconda3/envs/zhengay/bin/python")
 
-    # =========================
-    # JWT 持久登录关键配置
-    # =========================
-
-    # JWT 全部走 cookie，不再走前端 localStorage/header
+    # ===== JWT cookie 模式 =====
     JWT_TOKEN_LOCATION = ["cookies"]
 
-    # access token 短期
+    # 短 access token
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
 
-    # refresh token 长期
+    # 长 refresh token
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
-    # 开发环境如果不是 https，先设 False
-    # 生产环境如果用了 https，请改成 True
+    # 本地开发 HTTP 可先 False；线上 HTTPS 改 True
     JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "False").lower() == "true"
 
-    # 同站点场景推荐 Lax
+    # 同站点网页推荐 Lax
     JWT_COOKIE_SAMESITE = os.getenv("JWT_COOKIE_SAMESITE", "Lax")
 
-    # 你的项目是同域网页应用，先关掉，避免你当前前端改造成本太高
-    # 以后再加 CSRF 防护
+    # 先关闭，等整个站点稳定后再补 CSRF
     JWT_COOKIE_CSRF_PROTECT = False
 
-    # cookie path
     JWT_ACCESS_COOKIE_PATH = "/"
     JWT_REFRESH_COOKIE_PATH = "/api/auth/refresh"
