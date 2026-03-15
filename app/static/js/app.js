@@ -42,6 +42,7 @@ async function apiFetch(url, options = {}) {
   };
 
   const resp = await fetch(url, finalOptions);
+
   let result = {};
   try {
     result = await resp.json();
