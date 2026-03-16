@@ -13,11 +13,117 @@ from app.models.task_config import TaskConfig
 from app.models.run_event import RunEvent
 
 
+def _is_active_status(status: str) -> bool:
+    s = (status or "").lower()
+    return (
+        ("running" in s or "pending" in s or "queued" in s or "resume" in s)
+        and not any(x in s for x in ["success", "failed", "stopped", "finished", "completed"])
+    )
+
+
 class RunControlService:
     def __init__(self, basicsr_root: str, storage_root: str, python_exec: str = None):
         self.basicsr_root = Path(basicsr_root).resolve()
         self.storage_root = Path(storage_root).resolve()
         self.python_exec = python_exec or "python"
+
+    def delete_run(self, run_id: int, user_id: int):
+        run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
+        if not run:
+            raise ValueError("run not found")
+
+        if _is_active_status(run.status):
+            raise ValueError("run is still active, please stop it before deleting")
+
+        task_id = run.task_id
+
+        paths_to_cleanup = []
+        for p in [
+            run.work_dir,
+            run.log_dir,
+            run.checkpoint_dir,
+            run.output_dir,
+            run.tensorboard_dir,
+        ]:
+            if p:
+                paths_to_cleanup.append(Path(p))
+
+        db.session.add(RunEvent(
+            run_id=run.id,
+            event_type="deleted",
+            event_level="warning",
+            message="Run deleted manually",
+            event_time=datetime.utcnow()
+        ))
+        db.session.flush()
+
+        db.session.delete(run)
+        db.session.commit()
+
+        # 提交后再清理文件，避免文件删除异常导致数据库事务回滚混乱
+        for path in paths_to_cleanup:
+            try:
+                if path.exists():
+                    shutil.rmtree(path, ignore_errors=True)
+            except Exception:
+                pass
+
+        return {
+            "run_id": run_id,
+            "task_id": task_id
+        }
+
+    def _terminate_process_group(self, pid: int, timeout: int = 10):
+        if not pid:
+            return
+
+        try:
+            pgid = os.getpgid(pid)
+        except ProcessLookupError:
+            return
+        except Exception:
+            pgid = None
+
+        if pgid is not None:
+            try:
+                os.killpg(pgid, signal.SIGTERM)
+            except ProcessLookupError:
+                return
+            except Exception:
+                pass
+
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                if not psutil.pid_exists(pid):
+                    return
+                time.sleep(0.3)
+
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+            except ProcessLookupError:
+                return
+            except Exception:
+                pass
+
+            deadline = time.time() + 5
+            while time.time() < deadline:
+                if not psutil.pid_exists(pid):
+                    return
+                time.sleep(0.2)
+            return
+
+        try:
+            proc = psutil.Process(pid)
+            proc.terminate()
+            proc.wait(timeout=timeout)
+        except psutil.TimeoutExpired:
+            try:
+                proc.kill()
+                proc.wait(timeout=5)
+            except Exception:
+                pass
+        except Exception:
+            pass
 
     def _ensure_run_dir(self, user_id: int, task_id: int, run_id: int):
         run_dir = self.storage_root / "users" / str(user_id) / "tasks" / str(task_id) / "runs" / str(run_id)
@@ -85,9 +191,6 @@ class RunControlService:
         return str(best_state), run_name
 
     def stop_run(self, run_id: int, user_id: int):
-        import time
-        import psutil
-
         run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
         if not run:
             raise ValueError("run not found")
@@ -96,21 +199,7 @@ class RunControlService:
             return run
 
         if run.process_pid:
-            try:
-                proc = psutil.Process(run.process_pid)
-                proc.terminate()
-
-                # 最多等 10 秒，确保真正退出
-                try:
-                    proc.wait(timeout=10)
-                except psutil.TimeoutExpired:
-                    proc.kill()
-                    proc.wait(timeout=5)
-            except Exception:
-                pass
-
-        # 给 Windows 一点时间释放文件句柄
-        time.sleep(1.5)
+            self._terminate_process_group(run.process_pid, timeout=10)
 
         run.status = "stopped"
         run.ended_at = datetime.utcnow()
@@ -231,7 +320,10 @@ class RunControlService:
             cwd=str(self.basicsr_root),
             stdout=stdout_fp,
             stderr=stderr_fp,
-            env=env
+            stdin=subprocess.DEVNULL,
+            env=env,
+            close_fds=True,
+            start_new_session=True
         )
 
         new_run.process_pid = proc.pid

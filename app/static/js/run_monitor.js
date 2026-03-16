@@ -1,4 +1,10 @@
 const runId = window.__RUN_ID__;
+const deleteRunBtn = document.getElementById("deleteRunBtn");
+
+const deleteRunModal = document.getElementById("deleteRunModal");
+const deleteRunModalStatus = document.getElementById("deleteRunModalStatus");
+const cancelDeleteRunBtn = document.getElementById("cancelDeleteRunBtn");
+const confirmDeleteRunBtn = document.getElementById("confirmDeleteRunBtn");
 
 if (!runId) {
     alert("缺少运行ID，无法进入监控页面。");
@@ -34,6 +40,23 @@ const hardwareHistory = {
 };
 
 const MAX_POINTS = 60;
+
+
+function openDeleteRunModal() {
+  if (!deleteRunModal) return;
+  if (deleteRunModalStatus) {
+    deleteRunModalStatus.textContent = latestRunStatus || "-";
+  }
+  deleteRunModal.style.display = "block";
+  if (cancelDeleteRunBtn) {
+    cancelDeleteRunBtn.focus();
+  }
+}
+
+function closeDeleteRunModal() {
+  if (!deleteRunModal) return;
+  deleteRunModal.style.display = "none";
+}
 
 function pushLimited(arr, value, maxLen = MAX_POINTS) {
     arr.push(value);
@@ -111,22 +134,76 @@ function setStatusBar(run) {
 
     updateActionButtons();
 }
-
 function updateActionButtons() {
-    if (stopRunBtn) {
-        stopRunBtn.disabled = !isActiveRunStatus(latestRunStatus);
-    }
+  if (stopRunBtn) {
+    stopRunBtn.disabled = !isActiveRunStatus(latestRunStatus);
+  }
 
-    if (resumeRunBtn) {
-        const s = String(latestRunStatus || "").toLowerCase();
-        const canResume =
-            s.includes("stopped") ||
-            s.includes("failed") ||
-            s.includes("停止") ||
-            s.includes("失败");
-        resumeRunBtn.disabled = !canResume;
-    }
+  if (resumeRunBtn) {
+    const s = String(latestRunStatus || "").toLowerCase();
+    const canResume =
+      s.includes("stopped") ||
+      s.includes("failed") ||
+      s.includes("停止") ||
+      s.includes("失败");
+    resumeRunBtn.disabled = !canResume;
+  }
+
+  if (deleteRunBtn) {
+    deleteRunBtn.disabled = isActiveRunStatus(latestRunStatus);
+  }
 }
+
+if (deleteRunBtn) {
+  deleteRunBtn.addEventListener("click", () => {
+    openDeleteRunModal();
+  });
+}
+
+if (cancelDeleteRunBtn) {
+  cancelDeleteRunBtn.addEventListener("click", () => {
+    closeDeleteRunModal();
+  });
+}
+
+if (deleteRunModal) {
+  deleteRunModal.addEventListener("click", (e) => {
+    if (e.target.classList.contains("danger-modal-mask")) {
+      closeDeleteRunModal();
+    }
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (deleteRunModal && deleteRunModal.style.display !== "none") {
+      closeDeleteRunModal();
+    }
+  }
+});
+
+if (confirmDeleteRunBtn) {
+  confirmDeleteRunBtn.addEventListener("click", async () => {
+    confirmDeleteRunBtn.disabled = true;
+    try {
+      const { resp, result } = await apiFetch(`/api/run-control/${runId}/delete`, {
+        method: "POST"
+      });
+
+      if (!resp.ok) {
+        alert(result.message || "删除失败");
+        return;
+      }
+
+      closeDeleteRunModal();
+      alert("运行已删除");
+      window.location.href = `/tasks/${result.data.task_id}`;
+    } finally {
+      confirmDeleteRunBtn.disabled = false;
+    }
+  });
+}
+
 
 function renderBestWorst(bestMax, bestMin) {
     if (!bestWorstBox) return;
@@ -478,25 +555,71 @@ async function refreshAll() {
 window.addEventListener("resize", () => {
     resizeAllCharts();
 });
+const stopRunModal = document.getElementById("stopRunModal");
+const stopRunModalStatus = document.getElementById("stopRunModalStatus");
+const cancelStopRunBtn = document.getElementById("cancelStopRunBtn");
+const confirmStopRunBtn = document.getElementById("confirmStopRunBtn");
+
+function openStopRunModal() {
+  if (!stopRunModal) return;
+  if (stopRunModalStatus) {
+    stopRunModalStatus.textContent = latestRunStatus || "-";
+  }
+  stopRunModal.style.display = "block";
+  if (cancelStopRunBtn) {
+    cancelStopRunBtn.focus();
+  }
+}
+
+function closeStopRunModal() {
+  if (!stopRunModal) return;
+  stopRunModal.style.display = "none";
+}
 
 if (stopRunBtn) {
-    stopRunBtn.addEventListener("click", async () => {
-        const ok = confirm("确认停止当前运行吗？");
-        if (!ok) return;
-
-        const { resp, result } = await apiFetch(`/api/run-control/${runId}/stop`, {
-            method: "POST"
-        });
-
-        if (!resp.ok) {
-            alert(result.message || "停止失败");
-            return;
-        }
-
-        alert("运行已停止");
-        await fetchRunDetail();
-    });
+  stopRunBtn.addEventListener("click", () => {
+    openStopRunModal();
+  });
 }
+
+if (cancelStopRunBtn) {
+  cancelStopRunBtn.addEventListener("click", () => {
+    closeStopRunModal();
+  });
+}
+
+if (stopRunModal) {
+  stopRunModal.addEventListener("click", (e) => {
+    if (e.target.classList.contains("danger-modal-mask")) {
+      closeStopRunModal();
+    }
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && stopRunModal && stopRunModal.style.display !== "none") {
+    closeStopRunModal();
+  }
+});
+
+if (confirmStopRunBtn) {
+  confirmStopRunBtn.addEventListener("click", async () => {
+    confirmStopRunBtn.disabled = true;
+    try {
+      const { resp, result } = await apiFetch(`/api/run-control/${runId}/stop`, { method: "POST" });
+      if (!resp.ok) {
+        alert(result.message || "停止失败");
+        return;
+      }
+      closeStopRunModal();
+      alert("运行已停止");
+      await fetchRunDetail();
+    } finally {
+      confirmStopRunBtn.disabled = false;
+    }
+  });
+}
+
 
 if (resumeRunBtn) {
     resumeRunBtn.addEventListener("click", async () => {
@@ -534,3 +657,4 @@ if (resumeRunBtn) {
         await refreshAll();
     }, 5000);
 })();
+

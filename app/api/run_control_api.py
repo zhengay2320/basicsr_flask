@@ -77,3 +77,24 @@ def resume_run(run_id):
             "pid": run.process_pid
         }
     }), 201
+
+
+@run_control_api_bp.route("/<int:run_id>/delete", methods=["POST"])
+@login_required
+def delete_run(run_id):
+    user_id = int(current_user.id)
+    service = get_run_control_service()
+
+    try:
+        deleted = service.delete_run(run_id, user_id)
+    except Exception as e:
+        return jsonify({"code": 500, "message": f"delete failed: {str(e)}"}), 500
+
+    return jsonify({
+        "code": 200,
+        "message": "run deleted",
+        "data": {
+            "run_id": deleted["run_id"],
+            "task_id": deleted["task_id"]
+        }
+    })

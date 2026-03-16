@@ -102,7 +102,6 @@ def create_run():
         }
     }), 201
 
-
 @run_api_bp.route("/task/<int:task_id>", methods=["GET"])
 @login_required
 def list_runs_by_task(task_id):
@@ -113,8 +112,18 @@ def list_runs_by_task(task_id):
         TaskRun.user_id == user_id
     ).order_by(TaskRun.created_at.desc()).all()
 
+    monitor_service = get_monitor_service()
+    metric_service = get_metric_service()
+
     data = []
     for run in runs:
+        try:
+            run = monitor_service.refresh_run_status(run)
+        except Exception:
+            pass
+
+        summary = metric_service.summarize_run_metrics(run)
+
         data.append({
             "id": run.id,
             "task_id": run.task_id,
@@ -125,7 +134,10 @@ def list_runs_by_task(task_id):
             "gpu_devices": run.gpu_devices,
             "pid": run.process_pid,
             "started_at": run.started_at.isoformat() if run.started_at else None,
-            "ended_at": run.ended_at.isoformat() if run.ended_at else None
+            "ended_at": run.ended_at.isoformat() if run.ended_at else None,
+            "metric_summary_json": summary["metric_summary_json"],
+            "best_metric_max_json": summary["best_metric_max_json"],
+            "best_metric_min_json": summary["best_metric_min_json"],
         })
 
     return jsonify({
@@ -133,6 +145,7 @@ def list_runs_by_task(task_id):
         "message": "ok",
         "data": data
     })
+
 
 
 @run_api_bp.route("/<int:run_id>", methods=["GET"])
@@ -148,7 +161,7 @@ def get_run_detail(run_id):
         return jsonify({"code": 404, "message": str(e)}), 404
 
     metric_service = get_metric_service()
-    metric_service.summarize_run_metrics(run)
+    summary = metric_service.summarize_run_metrics(run)
 
     return jsonify({
         "code": 200,
@@ -169,9 +182,9 @@ def get_run_detail(run_id):
             "ended_at": run.ended_at.isoformat() if run.ended_at else None,
             "duration_seconds": run.duration_seconds,
             "error_message": run.error_message,
-            "metric_summary_json": run.metric_summary_json,
-            "best_metric_max_json": run.best_metric_max_json,
-            "best_metric_min_json": run.best_metric_min_json
+            "metric_summary_json": summary["metric_summary_json"],
+            "best_metric_max_json": summary["best_metric_max_json"],
+            "best_metric_min_json": summary["best_metric_min_json"],
         }
     })
 

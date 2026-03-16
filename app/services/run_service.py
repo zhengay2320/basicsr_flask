@@ -54,14 +54,7 @@ class RunService:
         with save_path.open("w", encoding="utf-8") as f:
             yaml.safe_dump(yaml_data, f, allow_unicode=True, sort_keys=False)
 
-    def create_and_start_run(
-        self,
-        user_id: int,
-        task_id: int,
-        gpu_mode: str,
-        gpu_devices: str = None,
-        run_name: str = None
-    ):
+    def create_and_start_run(self, user_id: int, task_id: int, gpu_mode: str, gpu_devices: str = None, run_name: str = None):
         task = Task.query.filter_by(id=task_id, user_id=user_id, is_deleted=False).first()
         if not task:
             raise ValueError("Task not found")
@@ -91,7 +84,6 @@ class RunService:
             gpu_mode=gpu_mode,
             gpu_devices=gpu_devices or ""
         )
-
         db.session.add(run)
         db.session.flush()
 
@@ -101,26 +93,19 @@ class RunService:
         run.checkpoint_dir = str(dirs["checkpoint_dir"])
         run.output_dir = str(dirs["output_dir"])
 
-        # 读取任务当前配置，生成 run 专属 yaml
         config_data = self._load_yaml(config.yaml_path)
-
         original_name = config_data.get("name", f"task_{task.id}")
         unique_name = self._make_unique_run_name(original_name, run.id)
-
-        # 修改 name，保证每次新运行互不冲突
         config_data["name"] = unique_name
 
         run_yaml_path = dirs["config_dir"] / f"run_{run.id}.yml"
         self._write_run_yaml(config_data, run_yaml_path)
-
         run.run_config_path = str(run_yaml_path)
 
-        # 根据新的 name 设置 TB 路径
         run.tensorboard_dir = str(self.basicsr_root / "tb_logger" / f"train_{unique_name}")
 
         script_name = "train.py" if task.task_type == "train" else "test.py"
         script_path = self.basicsr_root / "basicsr" / script_name
-
         if not script_path.exists():
             raise FileNotFoundError(f"BasicSR script not found: {script_path}")
 
@@ -147,7 +132,10 @@ class RunService:
             cwd=str(self.basicsr_root),
             stdout=stdout_fp,
             stderr=stderr_fp,
-            env=env
+            stdin=subprocess.DEVNULL,
+            env=env,
+            close_fds=True,
+            start_new_session=True
         )
 
         run.process_pid = proc.pid
@@ -161,6 +149,6 @@ class RunService:
             message=f"Run started with PID={proc.pid}, config name={unique_name}",
             event_time=datetime.utcnow()
         ))
-
         db.session.commit()
+
         return run

@@ -29,6 +29,7 @@
     <div class="form-row action-row monitor-action-row">
       <button id="stopRunBtn" class="danger-btn" type="button">停止当前运行</button>
       <button id="resumeRunBtn" class="primary-btn" type="button">恢复当前运行</button>
+        <button id="deleteRunBtn" class="danger-btn danger-btn-outline" type="button">删除当前运行</button>
     </div>
 
     <div class="tab-bar monitor-tab-bar">
@@ -94,6 +95,44 @@
     </div>
   </div>
 </div>
+    <div id="stopRunModal" class="danger-modal" style="display:none;">
+  <div class="danger-modal-mask"></div>
+  <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="stopRunModalTitle">
+    <div class="danger-modal-header">
+      <h3 id="stopRunModalTitle">确认停止当前运行</h3>
+    </div>
+    <div class="danger-modal-body">
+      <p>该操作会立即终止当前 BasicSR 运行。</p>
+      <p>运行 ID：<strong id="stopRunModalRunId">{{ run.id if run else "-" }}</strong></p>
+      <p>当前状态：<strong id="stopRunModalStatus">-</strong></p>
+      <p class="danger-text">停止后当前训练/测试进程会被中断，未完成部分不会继续执行。</p>
+    </div>
+    <div class="danger-modal-actions">
+      <button type="button" id="cancelStopRunBtn" class="btn btn-secondary">取消</button>
+      <button type="button" id="confirmStopRunBtn" class="btn btn-danger">确认停止</button>
+    </div>
+  </div>
+</div>
+
+    <div id="deleteRunModal" class="danger-modal" style="display:none;">
+  <div class="danger-modal-mask"></div>
+  <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteRunModalTitle">
+    <div class="danger-modal-header">
+      <h3 id="deleteRunModalTitle">确认删除当前运行</h3>
+    </div>
+    <div class="danger-modal-body">
+      <p>该操作会删除当前运行词条，并清理对应的运行目录信息。</p>
+      <p>运行 ID：<strong id="deleteRunModalRunId">{{ run_id }}</strong></p>
+      <p>当前状态：<strong id="deleteRunModalStatus">-</strong></p>
+      <p class="danger-text">删除后将无法从监控页继续查看该运行的日志、曲线和摘要。</p>
+    </div>
+    <div class="danger-modal-actions">
+      <button type="button" id="cancelDeleteRunBtn" class="btn btn-secondary">取消</button>
+      <button type="button" id="confirmDeleteRunBtn" class="btn btn-danger">确认删除</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -104,3 +143,4 @@
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 <script src="{{ url_for('static', filename='js/run_monitor.js') }}"></script>
 {% endblock %}
+

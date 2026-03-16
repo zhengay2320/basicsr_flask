@@ -1493,3 +1493,80 @@ button:hover {
         flex-direction: column;
     }
 }
+
+  .danger-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+  }
+
+  .danger-modal-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .danger-modal-dialog {
+    position: relative;
+    width: min(520px, calc(100vw - 32px));
+    margin: 12vh auto 0;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .danger-modal-header {
+    padding: 18px 20px 10px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .danger-modal-header h3 {
+    margin: 0;
+    color: #c62828;
+    font-size: 20px;
+  }
+
+  .danger-modal-body {
+    padding: 18px 20px;
+    line-height: 1.7;
+    color: #333;
+  }
+
+  .danger-text {
+    margin-top: 10px;
+    color: #c62828;
+    font-weight: 600;
+  }
+
+  .danger-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 14px 20px 20px;
+  }
+
+  .btn-danger {
+    background: #c62828;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .btn-danger:hover {
+    background: #b71c1c;
+  }
+
+<style>
+  .danger-btn-outline {
+    background: #fff;
+    color: #c62828;
+    border: 1px solid #c62828;
+  }
+
+  .danger-btn-outline:hover {
+    background: #fdeaea;
+  }
+</style>
