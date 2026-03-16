@@ -1559,7 +1559,6 @@ button:hover {
     background: #b71c1c;
   }
 
-<style>
   .danger-btn-outline {
     background: #fff;
     color: #c62828;
@@ -1569,4 +1568,4 @@ button:hover {
   .danger-btn-outline:hover {
     background: #fdeaea;
   }
-</style>
+

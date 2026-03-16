@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, request, current_app
-# from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 
@@ -13,10 +12,28 @@ from app.services.task_service import TaskService
 task_api_bp = Blueprint("task_api", __name__)
 
 
+RUNNING_LIKE_STATUSES = {
+    "running",
+    "pending",
+    "queued",
+    "resuming",
+    "resumed",
+}
+
+
 def get_task_service():
     basicsr_root = current_app.config["BASICSR_ROOT"]
     storage_root = current_app.config["STORAGE_ROOT"]
     return TaskService(basicsr_root=basicsr_root, storage_root=storage_root)
+
+
+def query_user_task(task_id: int, user_id: int):
+    return Task.query.filter(
+        Task.id == task_id,
+        Task.user_id == user_id,
+        or_(Task.is_deleted.is_(False), Task.is_deleted.is_(None)),
+    )
+
 
 @task_api_bp.route("", methods=["GET"])
 @login_required
@@ -25,7 +42,7 @@ def list_tasks():
 
     tasks = Task.query.filter(
         Task.user_id == user_id,
-        or_(Task.is_deleted.is_(False), Task.is_deleted.is_(None))
+        or_(Task.is_deleted.is_(False), Task.is_deleted.is_(None)),
     ).order_by(Task.created_at.desc()).all()
 
     result = []
@@ -38,11 +55,10 @@ def list_tasks():
             "description": task.description,
             "template_path": task.template_path,
             "config_version": task.config_version,
-            "created_at": task.created_at.isoformat() if task.created_at else None
+            "created_at": task.created_at.isoformat() if task.created_at else None,
         })
 
     return jsonify({"code": 200, "message": "ok", "data": result})
-
 
 
 @task_api_bp.route("/templates", methods=["GET"])
@@ -62,10 +78,7 @@ def list_modules():
         data = service.list_modules()
         return jsonify({"code": 200, "message": "ok", "data": data})
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "message": f"加载 BasicSR 注册表失败: {str(e)}"
-        }), 500
+        return jsonify({"code": 500, "message": f"加载 BasicSR 注册表失败: {str(e)}"}), 500
 
 
 @task_api_bp.route("/template-detail", methods=["GET"])
@@ -100,12 +113,11 @@ def template_section():
 @login_required
 def create_task():
     user_id = int(current_user.id)
-
     data = request.get_json(silent=True) or {}
 
     task_name = (data.get("task_name") or "").strip()
     task_type = (data.get("task_type") or "train").strip()
-    description = data.get("description") or ""
+    description = str(data.get("description") or "").strip()
     template_relative_path = (data.get("template_relative_path") or "").strip()
     manual_patch_text = data.get("manual_patch_text") or ""
 
@@ -129,7 +141,7 @@ def create_task():
             description=description,
             template_relative_path=template_relative_path,
             section_overrides=section_overrides,
-            manual_patch_text=manual_patch_text
+            manual_patch_text=manual_patch_text,
         )
     except Exception as e:
         return jsonify({"code": 500, "message": f"create task failed: {str(e)}"}), 500
@@ -141,8 +153,8 @@ def create_task():
             "task_id": task.id,
             "task_name": task.task_name,
             "config_id": task_config.id,
-            "yaml_path": task_config.yaml_path
-        }
+            "yaml_path": task_config.yaml_path,
+        },
     }), 201
 
 
@@ -150,13 +162,7 @@ def create_task():
 @login_required
 def get_task(task_id):
     user_id = int(current_user.id)
-
-
-    task = Task.query.filter(
-        Task.id == task_id,
-        Task.user_id == user_id,
-        Task.is_deleted == False
-    ).first()
+    task = query_user_task(task_id, user_id).first()
 
     if not task:
         return jsonify({"code": 404, "message": "task not found"}), 404
@@ -180,9 +186,41 @@ def get_task(task_id):
             "current_config": {
                 "id": task_config.id,
                 "yaml_path": task_config.yaml_path,
-                "config_json": task_config.config_json
-            } if task_config else None
-        }
+                "config_json": task_config.config_json,
+            } if task_config else None,
+        },
+    })
+
+
+@task_api_bp.route("/<int:task_id>", methods=["PUT", "PATCH"])
+@login_required
+def update_task(task_id):
+    user_id = int(current_user.id)
+    task = query_user_task(task_id, user_id).first()
+
+    if not task:
+        return jsonify({"code": 404, "message": "task not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+
+    if "description" not in data:
+        return jsonify({"code": 400, "message": "description is required"}), 400
+
+    description = str(data.get("description") or "").strip()
+    if len(description) > 2000:
+        return jsonify({"code": 400, "message": "description is too long"}), 400
+
+    task.description = description
+    db.session.add(task)
+    db.session.commit()
+
+    return jsonify({
+        "code": 200,
+        "message": "task updated",
+        "data": {
+            "task_id": task.id,
+            "description": task.description,
+        },
     })
 
 
@@ -190,7 +228,6 @@ def get_task(task_id):
 @login_required
 def delete_task(task_id):
     user_id = int(current_user.id)
-
     data = request.get_json(silent=True) or {}
 
     password = data.get("password") or ""
@@ -204,25 +241,20 @@ def delete_task(task_id):
     if not user.check_password(password):
         return jsonify({"code": 403, "message": "password is incorrect"}), 403
 
-    task = Task.query.filter(
-        Task.id == task_id,
-        Task.user_id == user_id,
-        Task.is_deleted == False
-    ).first()
-
+    task = query_user_task(task_id, user_id).first()
     if not task:
         return jsonify({"code": 404, "message": "task not found"}), 404
 
     running_run = TaskRun.query.filter(
         TaskRun.task_id == task.id,
         TaskRun.user_id == user_id,
-        TaskRun.status == "running"
+        TaskRun.status.in_(tuple(RUNNING_LIKE_STATUSES)),
     ).first()
 
     if running_run:
         return jsonify({
             "code": 400,
-            "message": "当前任务还有运行中的实验，请先停止运行后再删除"
+            "message": "当前任务还有未结束的实验，请先停止或等待完成后再删除",
         }), 400
 
     task.is_deleted = True
@@ -232,8 +264,5 @@ def delete_task(task_id):
     return jsonify({
         "code": 200,
         "message": "task deleted",
-        "data": {
-            "task_id": task.id,
-            "is_deleted": task.is_deleted
-        }
+        "data": {"task_id": task.id, "is_deleted": task.is_deleted},
     })

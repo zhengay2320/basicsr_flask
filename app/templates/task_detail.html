@@ -31,6 +31,19 @@
       <div class="content-card detail-block">
         <div class="section-title">任务信息</div>
         <div id="taskInfo" class="detail-info-panel"></div>
+
+        <div class="run-form-grid" style="margin-top: 18px;">
+          <div class="form-row" style="grid-column: 1 / -1;">
+            <label for="taskDescriptionInput">任务描述（可随时修改）</label>
+            <textarea id="taskDescriptionInput" rows="4" placeholder="请输入任务描述"></textarea>
+          </div>
+        </div>
+
+        <div class="detail-actions" style="margin-top: 14px;">
+          <button type="button" class="primary-btn" id="updateDescriptionBtn">修改描述</button>
+        </div>
+
+        <div id="taskDescriptionMsg" class="result-text task-result"></div>
       </div>
 
       <div class="content-card detail-block">

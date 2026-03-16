@@ -7,12 +7,17 @@ const startRunBtn = document.getElementById("startRunBtn");
 const viewConfigBtn = document.getElementById("viewConfigBtn");
 const deleteTaskBtn = document.getElementById("deleteTaskBtn");
 const exportTaskBtn = document.getElementById("exportTaskBtn");
+const updateDescriptionBtn = document.getElementById("updateDescriptionBtn");
+const taskDescriptionInput = document.getElementById("taskDescriptionInput");
+const taskDescriptionMsg = document.getElementById("taskDescriptionMsg");
 
 const deleteTaskModal = document.getElementById("deleteTaskModal");
 const deletePasswordInput = document.getElementById("deletePassword");
 const deleteTaskMsg = document.getElementById("deleteTaskMsg");
 const confirmDeleteTaskBtn = document.getElementById("confirmDeleteTaskBtn");
 const cancelDeleteTaskBtn = document.getElementById("cancelDeleteTaskBtn");
+
+let currentTask = null;
 
 if (!taskId || String(taskId).trim() === "") {
     alert("请先从任务列表进入具体任务详情页。");
@@ -24,6 +29,10 @@ function escapeHtml(value) {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+}
+
+function normalizeDescription(value) {
+    return String(value ?? "").trim();
 }
 
 function isActiveRunStatus(status) {
@@ -100,6 +109,25 @@ function formatMetricSummary(bestMaxJson, bestMinJson) {
     `;
 }
 
+function renderTask(task) {
+    currentTask = task;
+
+    taskInfo.innerHTML = `
+        <p><strong>ID:</strong> ${escapeHtml(task.id)}</p>
+        <p><strong>任务名:</strong> ${escapeHtml(task.task_name)}</p>
+        <p><strong>当前描述:</strong> ${escapeHtml(task.description ? task.description : "暂无描述")}</p>
+        <p><strong>类型:</strong> ${escapeHtml(task.task_type)}</p>
+        <p><strong>状态:</strong> <span class="${getStatusBadgeClass(task.status)}">${escapeHtml(task.status || "-")}</span></p>
+        <p><strong>模板:</strong> ${escapeHtml(task.template_path || "-")}</p>
+        <p><strong>当前配置ID:</strong> ${escapeHtml(task.current_config_id || "-")}</p>
+        <p><strong>当前配置路径:</strong> ${escapeHtml(task.current_config ? task.current_config.yaml_path : "-")}</p>
+    `;
+
+    if (taskDescriptionInput) {
+        taskDescriptionInput.value = task.description || "";
+    }
+}
+
 async function loadTask() {
     if (!taskId) return;
 
@@ -112,17 +140,46 @@ async function loadTask() {
         return;
     }
 
-    const task = result.data;
-    taskInfo.innerHTML = `
-        <p><strong>ID:</strong> ${escapeHtml(task.id)}</p>
-        <p><strong>任务名:</strong> ${escapeHtml(task.task_name)}</p>
-        <p><strong>描述:</strong> ${escapeHtml(task.description ? task.description : "暂无描述")}</p>
-        <p><strong>类型:</strong> ${escapeHtml(task.task_type)}</p>
-        <p><strong>状态:</strong> <span class="${getStatusBadgeClass(task.status)}">${escapeHtml(task.status || "-")}</span></p>
-        <p><strong>模板:</strong> ${escapeHtml(task.template_path || "-")}</p>
-        <p><strong>当前配置ID:</strong> ${escapeHtml(task.current_config_id || "-")}</p>
-        <p><strong>当前配置路径:</strong> ${escapeHtml(task.current_config ? task.current_config.yaml_path : "-")}</p>
-    `;
+    renderTask(result.data);
+}
+
+async function updateTaskDescription() {
+    if (!taskDescriptionInput || !updateDescriptionBtn || !currentTask) return;
+
+    const nextDescription = normalizeDescription(taskDescriptionInput.value);
+    const prevDescription = normalizeDescription(currentTask.description);
+
+    taskDescriptionMsg.innerText = "";
+
+    if (nextDescription === prevDescription) {
+        taskDescriptionMsg.innerText = "描述未修改，无需提交";
+        return;
+    }
+
+    updateDescriptionBtn.disabled = true;
+
+    try {
+        const { resp, result } = await requestJson(`/api/tasks/${taskId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ description: nextDescription })
+        });
+
+        if (!resp.ok) {
+            taskDescriptionMsg.innerText = result.message || "描述修改失败";
+            return;
+        }
+
+        taskDescriptionMsg.innerText = "任务描述已更新";
+        await loadTask();
+    } catch (err) {
+        console.error(err);
+        taskDescriptionMsg.innerText = "描述修改失败，请稍后重试";
+    } finally {
+        updateDescriptionBtn.disabled = false;
+    }
 }
 
 async function loadRuns() {
@@ -179,10 +236,11 @@ if (startRunBtn) {
         startRunBtn.disabled = true;
 
         try {
+            const gpuMode = document.getElementById("gpuMode").value;
             const payload = {
                 task_id: taskId,
                 run_name: document.getElementById("runName").value.trim(),
-                gpu_mode: document.getElementById("gpuMode").value,
+                gpu_mode: gpuMode === "auto" ? "single" : gpuMode,
                 gpu_devices: document.getElementById("gpuDevices").value.trim()
             };
 
@@ -238,6 +296,10 @@ if (exportTaskBtn) {
     });
 }
 
+if (updateDescriptionBtn) {
+    updateDescriptionBtn.addEventListener("click", updateTaskDescription);
+}
+
 if (deleteTaskBtn) {
     deleteTaskBtn.addEventListener("click", () => {
         deleteTaskModal.style.display = "flex";
@@ -273,9 +335,7 @@ if (confirmDeleteTaskBtn) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    password: password
-                })
+                body: JSON.stringify({ password: password })
             });
 
             if (!resp.ok) {
