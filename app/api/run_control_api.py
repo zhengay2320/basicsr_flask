@@ -44,7 +44,7 @@ def stop_run(run_id):
 @run_control_api_bp.route("/run/<int:run_id>/resume", methods=["POST"])
 @login_required
 def resume_run(run_id):
-    user_id = int(get_jwt_identity())
+    user_id = int(current_user.id)
     service = get_run_control_service()
     data = request.get_json(silent=True) or {}
 

@@ -29,6 +29,7 @@
     <div class="form-row action-row monitor-action-row">
       <button id="stopRunBtn" class="danger-btn" type="button">停止当前运行</button>
       <button id="resumeRunBtn" class="primary-btn" type="button">恢复当前运行</button>
+        <button id="viewRunConfigBtn" class="btn btn-secondary">查看当前运行配置</button>
         <button id="deleteRunBtn" class="danger-btn danger-btn-outline" type="button">删除当前运行</button>
     </div>
 
@@ -56,9 +57,11 @@
           <div id="lossChart" class="chart-box"></div>
         </div>
         <div class="chart-card">
-          <h3>Metric 曲线</h3>
-          <div id="metricChart" class="chart-box"></div>
-        </div>
+  <h3>Metric 曲线（归一化）</h3>
+  <div id="metricChart" class="chart-box"></div>
+  <div id="metricLegendSummary" class="metric-legend-summary"></div>
+</div>
+
       </div>
     </div>
 
@@ -95,7 +98,7 @@
     </div>
   </div>
 </div>
-    <div id="stopRunModal" class="danger-modal" style="display:none;">
+   <div id="stopRunModal" class="danger-modal" style="display:none;">
   <div class="danger-modal-mask"></div>
   <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="stopRunModalTitle">
     <div class="danger-modal-header">
@@ -114,7 +117,7 @@
   </div>
 </div>
 
-    <div id="deleteRunModal" class="danger-modal" style="display:none;">
+<div id="deleteRunModal" class="danger-modal" style="display:none;">
   <div class="danger-modal-mask"></div>
   <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteRunModalTitle">
     <div class="danger-modal-header">
@@ -132,6 +135,28 @@
     </div>
   </div>
 </div>
+
+<div id="runConfigModal" class="danger-modal" style="display:none;">
+  <div class="danger-modal-mask"></div>
+  <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="runConfigModalTitle" style="max-width: 900px; width: 90%;">
+    <div class="danger-modal-header">
+      <h3 id="runConfigModalTitle">当前运行对应配置</h3>
+    </div>
+    <div class="danger-modal-body">
+      <p id="runConfigMeta">加载中...</p>
+      <textarea
+        id="runConfigContent"
+        readonly
+        style="width:100%; min-height:420px; font-family: monospace;"
+      ></textarea>
+    </div>
+    <div class="danger-modal-actions">
+      <button type="button" id="closeRunConfigModalBtn" class="btn btn-secondary">关闭</button>
+    </div>
+  </div>
+</div>
+
+
 
 {% endblock %}
 

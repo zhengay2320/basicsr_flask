@@ -1,0 +1,179 @@
+*** Begin Patch
+*** Update File: app/api/run_api.py
+@@
+-from flask import Blueprint, jsonify, request, current_app
++from pathlib import Path
++
++import yaml
++from flask import Blueprint, jsonify, request, current_app
+@@
+ def get_run_hardware(run_id):
+@@
+     return jsonify({
+         "code": 200,
+         "message": "ok",
+         "data": {
+             "run_id": run.id,
+             "status": run.status,
+             "gpu_mode": run.gpu_mode,
+             "gpu_devices": run.gpu_devices,
+             "snapshot": data
+         }
+     })
++
++
++@run_api_bp.route("/<int:run_id>/config", methods=["GET"])
++@login_required
++def get_run_bound_config(run_id):
++    user_id = int(current_user.id)
++    monitor_service = get_monitor_service()
++
++    try:
++        run = monitor_service.get_run_or_raise(run_id, user_id)
++    except Exception as e:
++        return jsonify({"code": 404, "message": str(e)}), 404
++
++    config = TaskConfig.query.filter_by(
++        id=run.config_id,
++        task_id=run.task_id,
++        user_id=user_id,
++    ).first()
++
++    config_text = ""
++    source_path = run.run_config_path or (config.yaml_path if config else None)
++    if source_path:
++        path_obj = Path(source_path)
++        if path_obj.exists() and path_obj.is_file():
++            config_text = path_obj.read_text(encoding="utf-8", errors="ignore")
++
++    snapshot_name = None
++    if config_text:
++        try:
++            parsed = yaml.safe_load(config_text) or {}
++            snapshot_name = parsed.get("name")
++        except Exception:
++            snapshot_name = None
++
++    return jsonify({
++        "code": 200,
++        "message": "ok",
++        "data": {
++            "run_id": run.id,
++            "task_id": run.task_id,
++            "config_id": run.config_id,
++            "config_version_no": config.version_no if config else None,
++            "config_name": config.config_name if config else None,
++            "source_yaml_path": config.yaml_path if config else None,
++            "run_config_path": run.run_config_path,
++            "snapshot_name": snapshot_name,
++            "content": config_text,
++        }
++    })
+*** Update File: app/templates/run_monitor.html
+@@
+   <div class="form-row action-row monitor-action-row">
+ 
+   <button id="stopRunBtn" class="danger-btn" type="button">停止当前运行</button>
+   <button id="resumeRunBtn" class="primary-btn" type="button">恢复当前运行</button>
++  <button id="viewRunConfigBtn" class="ghost-btn" type="button">查看当前运行配置</button>
+ 
+   <button id="deleteRunBtn" class="danger-btn danger-btn-outline" type="button">删除当前运行</button>
+ 
+   </div>
+@@
+ </div>
++
++<div id="runConfigModal" class="danger-modal" style="display:none;">
++  <div class="danger-modal-mask"></div>
++  <div class="danger-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="runConfigModalTitle">
++    <div class="danger-modal-header">
++      <h3 id="runConfigModalTitle">当前运行对应的配置文件</h3>
++    </div>
++    <div class="danger-modal-body">
++      <p id="runConfigMeta">加载中...</p>
++      <pre id="runConfigContent" class="log-window" style="max-height: 420px; white-space: pre-wrap;"></pre>
++    </div>
++    <div class="danger-modal-actions">
++      <button type="button" id="closeRunConfigBtn" class="btn btn-secondary">关闭</button>
++    </div>
++  </div>
++</div>
+ {% endblock %}
+*** Update File: app/static/js/run_monitor.js
+@@
+ const deleteRunBtn = document.getElementById("deleteRunBtn");
++const viewRunConfigBtn = document.getElementById("viewRunConfigBtn");
+ const deleteRunModal = document.getElementById("deleteRunModal");
+ const deleteRunModalStatus = document.getElementById("deleteRunModalStatus");
+ const cancelDeleteRunBtn = document.getElementById("cancelDeleteRunBtn");
+ const confirmDeleteRunBtn = document.getElementById("confirmDeleteRunBtn");
++const runConfigModal = document.getElementById("runConfigModal");
++const closeRunConfigBtn = document.getElementById("closeRunConfigBtn");
++const runConfigMeta = document.getElementById("runConfigMeta");
++const runConfigContent = document.getElementById("runConfigContent");
+@@
+ function closeDeleteRunModal() {
+   if (!deleteRunModal) return;
+   deleteRunModal.style.display = "none";
+ }
++
++function openRunConfigModal() {
++  if (!runConfigModal) return;
++  runConfigModal.style.display = "block";
++}
++
++function closeRunConfigModal() {
++  if (!runConfigModal) return;
++  runConfigModal.style.display = "none";
++}
+@@
+ if (confirmDeleteRunBtn) {
+@@
+ }
++
++if (viewRunConfigBtn) {
++  viewRunConfigBtn.addEventListener("click", async () => {
++    openRunConfigModal();
++    if (runConfigMeta) {
++      runConfigMeta.textContent = "正在加载当前运行绑定的配置文件...";
++    }
++    if (runConfigContent) {
++      runConfigContent.textContent = "";
++    }
++
++    const { resp, result } = await apiFetch(`/api/runs/${runId}/config`, {
++      method: "GET"
++    });
++
++    if (!resp.ok) {
++      if (runConfigMeta) {
++        runConfigMeta.textContent = result.message || "配置文件读取失败";
++      }
++      return;
++    }
++
++    const data = result.data || {};
++    if (runConfigMeta) {
++      const versionText = data.config_version_no ? `v${data.config_version_no}` : "-";
++      runConfigMeta.textContent = `配置版本：${versionText} | 配置名称：${data.config_name || "-"} | 快照路径：${data.run_config_path || "-"}`;
++    }
++    if (runConfigContent) {
++      runConfigContent.textContent = data.content || "当前运行未找到对应配置内容。";
++    }
++  });
++}
++
++if (closeRunConfigBtn) {
++  closeRunConfigBtn.addEventListener("click", () => {
++    closeRunConfigModal();
++  });
++}
++
++if (runConfigModal) {
++  runConfigModal.addEventListener("click", (e) => {
++    if (e.target.classList.contains("danger-modal-mask")) {
++      closeRunConfigModal();
++    }
++  });
++}
+*** End Patch

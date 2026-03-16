@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
-
+import os
 from app.models.task import Task
 from app.models.task_run import TaskRun
 from app.models.task_config import TaskConfig
@@ -311,5 +311,49 @@ def get_run_hardware(run_id):
             "gpu_mode": run.gpu_mode,
             "gpu_devices": run.gpu_devices,
             "snapshot": data
+        }
+    })
+
+
+
+@run_api_bp.route("/<int:run_id>/config", methods=["GET"])
+@login_required
+def get_run_bound_config(run_id):
+    user_id = int(current_user.id)
+
+    run = TaskRun.query.filter_by(id=run_id, user_id=user_id).first()
+    if not run:
+        return jsonify({"code": 404, "message": "run not found"}), 404
+
+    config = TaskConfig.query.filter_by(
+        id=run.config_id,
+        task_id=run.task_id,
+        user_id=user_id
+    ).first()
+
+    if not config:
+        return jsonify({"code": 404, "message": "bound config not found"}), 404
+
+    content = ""
+    if run.run_config_path and os.path.exists(run.run_config_path):
+        with open(run.run_config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    elif config.yaml_path and os.path.exists(config.yaml_path):
+        # 兜底：如果运行快照不存在，就退回配置版本文件
+        with open(config.yaml_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "run_id": run.id,
+            "task_id": run.task_id,
+            "config_id": config.id,
+            "config_version_no": config.version_no,
+            "config_name": config.config_name,
+            "config_yaml_path": config.yaml_path,
+            "run_config_path": run.run_config_path,
+            "content": content
         }
     })
