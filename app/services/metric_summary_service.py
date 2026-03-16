@@ -38,30 +38,32 @@ class MetricSummaryService:
         return None
 
     def _discover_tensorboard_dir(self, run: TaskRun):
-        # 1) 优先根据 run yaml 的 name 精准定位
+        """
+        只查当前 run 对应的 TensorBoard 目录：
+        1. BASICSR_ROOT/tb_logger/<name>
+        2. BASICSR_ROOT/tb_logger/train_<name>（兼容旧规则）
+        3. run.tensorboard_dir
+        不再扫描全局最新目录。
+        """
         config_name = self._load_run_config_name(run)
         if config_name:
-            tb_dir = self.basicsr_root / "tb_logger" / f"train_{config_name}"
-            if self._has_event_files(tb_dir):
-                return tb_dir
+            tb_root = self.basicsr_root / "tb_logger"
 
-        # 2) 其次使用 run.tensorboard_dir
+            candidates = [
+                tb_root / config_name,  # 新规则
+                tb_root / f"train_{config_name}",  # 兼容旧规则
+            ]
+
+            for tb_dir in candidates:
+                if self._has_event_files(tb_dir):
+                    return tb_dir
+
         if run.tensorboard_dir:
             tb_dir = Path(run.tensorboard_dir)
             if self._has_event_files(tb_dir):
                 return tb_dir
 
-        # 3) 最后兜底扫描 tb_logger 下最新有效目录
-        tb_root = self.basicsr_root / "tb_logger"
-        if not tb_root.exists():
-            return None
-
-        valid_dirs = [p for p in tb_root.iterdir() if p.is_dir() and self._has_event_files(p)]
-        if not valid_dirs:
-            return None
-
-        valid_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-        return valid_dirs[0]
+        return None
 
     def summarize_run_metrics(self, run: TaskRun, commit: bool = True):
         tb_dir = self._discover_tensorboard_dir(run)

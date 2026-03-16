@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import re
+import yaml
 
 import psutil
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -190,53 +191,49 @@ class RunMonitorService:
         except Exception:
             return None
 
-    def _get_tb_dir_from_config_name(self, run: TaskRun):
+    def _get_tb_dir_candidates_from_config_name(self, run: TaskRun):
         """
-        根据 BasicSR 规则：
-        <BASICSR_ROOT>/tb_logger/train_<config_name>
+        根据 run.run_config_path 中 yml 的 name 字段推导 TensorBoard 目录。
+        当前项目约定：
+          BASICSR_ROOT/tb_logger/<name>
+
+        为兼容旧版本，再额外尝试：
+          BASICSR_ROOT/tb_logger/train_<name>
         """
         if not self.basicsr_root:
-            return None
+            return []
 
         config_name = self._load_run_config_name(run)
         if not config_name:
-            return None
+            return []
 
-        tb_dir = self.basicsr_root / "tb_logger" / f"train_{config_name}"
-        return tb_dir
+        tb_root = self.basicsr_root / "tb_logger"
+
+        candidates = [
+            tb_root / config_name,  # 新规则
+            tb_root / f"train_{config_name}",  # 兼容旧规则
+            tb_root / f"test_{config_name}",  # 兼容旧规则
+        ]
+        return candidates
 
     def _discover_tensorboard_dir(self, run: TaskRun):
         """
-        更鲁棒的优先级：
-        1. 根据当前 run 的 config yml 读取 name 字段，拼出:
-           BASICSR_ROOT/tb_logger/train_<name>
-        2. 如果 run.tensorboard_dir 本身存在 event 文件，也可使用
-        3. 最后才兜底扫描 tb_logger 下最新目录
+        只查当前 run 明确绑定的 TensorBoard 目录，不扫描全局最新目录。
+        查找优先级：
+        1. run.run_config_path 对应 yml 的 name -> BASICSR_ROOT/tb_logger/<name>
+        2. run.run_config_path 对应 yml 的 name -> BASICSR_ROOT/tb_logger/train_<name>（兼容旧数据）
+        3. run.tensorboard_dir（兼容旧库里已写入的绝对路径）
         """
-        # 1) 最优先：根据 yml 的 name 字段定位
-        tb_dir_by_name = self._get_tb_dir_from_config_name(run)
-        if tb_dir_by_name and self._has_event_files(tb_dir_by_name):
-            return tb_dir_by_name
+        # 1) 按 yml 的 name 字段定位
+        for tb_dir in self._get_tb_dir_candidates_from_config_name(run):
+            if self._has_event_files(tb_dir):
+                return tb_dir
 
-        # 2) 其次：run.tensorboard_dir
+        # 2) 兼容数据库中已保存的 tensorboard_dir
         if run.tensorboard_dir:
             tb_dir = Path(run.tensorboard_dir)
             if self._has_event_files(tb_dir):
                 return tb_dir
-
-        # 3) 兜底：扫描 BASICSR_ROOT/tb_logger 下最近的有效目录
-        if not self.basicsr_root:
-            return None
-
-        tb_root = self.basicsr_root / "tb_logger"
-        if not tb_root.exists():
-            return None
-
-        subdirs = [p for p in tb_root.iterdir() if p.is_dir()]
-        valid_dirs = [d for d in subdirs if self._has_event_files(d)]
-        if valid_dirs:
-            valid_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-            return valid_dirs[0]
 
         return None
 
@@ -263,3 +260,4 @@ class RunMonitorService:
     def get_tensorboard_dir_for_run(self, run: TaskRun):
         tb_dir = self._discover_tensorboard_dir(run)
         return str(tb_dir) if tb_dir else None
+

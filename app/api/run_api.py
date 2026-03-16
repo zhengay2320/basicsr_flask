@@ -257,6 +257,7 @@ def get_tb_scalars(run_id):
     return jsonify({
         "code": 200,
         "message": "ok",
+        "has_tensorboard_data": bool(tensorboard_dir and scalars),
         "data": {
             "run_id": run.id,
             "status": run.status,
