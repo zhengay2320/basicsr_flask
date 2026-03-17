@@ -6,14 +6,14 @@ class DefaultConfig:
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URI",
-        "mysql+pymysql://zhengay_user:cohy453765348@127.0.0.1:3306/basicsr_platform?charset=utf8mb4"
+        "mysql+pymysql://你的用户名:你的密码@127.0.0.1:3306/basicsr_platform?charset=utf8mb4"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False
 
     BASICSR_ROOT = os.getenv("BASICSR_ROOT", r"/home/ubuntu/data/zhenganyang/myMLPro")
     STORAGE_ROOT = os.getenv("STORAGE_ROOT", r"/home/ubuntu/data/zhenganyang/myMLPro/storage")
-    PYTHON_EXEC = os.getenv("PYTHON_EXEC", r"/home/ubuntu/data/miniconda3/envs/zhengay/bin/python")
+    PYTHON_EXEC = os.getenv("PYTHON_EXEC", r"/home/ubuntu/data/miniconda3/envs/xxx/bin/python")#python环境
 
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_COOKIE_HTTPONLY = True
